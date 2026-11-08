@@ -227,7 +227,7 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 ### REC-001 · [TASK] · 🔴 CRITICAL · 5 SP · EP-01
 **Bootstrap do monorepo Gradle multi-módulo**
 
-*Auditoria: D1, C5. Estado: o bootstrap já existe no repositório (7 módulos, `build-logic`, version catalog, smoke tests). Falta verificar `./gradlew build` e alinhar este texto ao código.*
+*Auditoria: D1, C5. Estado: concluído — 6 módulos, build verificado com JDK 21.*
 
 **Descrição.** Criar o repositório único com os módulos definitivos e cada serviço Spring Boot subindo com health check. É a fundação sobre a qual todo o resto é construído.
 
@@ -240,7 +240,7 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 
 **Critérios de aceite.**
 - `./gradlew build` compila todos os módulos sem erro (rodado de fato, com JDK 21).
-- `core-api` e `driver-bling` sobem e respondem `GET /actuator/health` = `{"status":"UP"}`.
+- `core-api` e `driver-bling` sobem e respondem `GET /actuator/health` → 200 com `status` = `UP`.
 - `./gradlew :core-api:bootRun` sobe só o core.
 - README com "como rodar".
 - `settings.gradle.kts` com **6 módulos** (`contracts`, `common`, `core-api`, `driver-sdk`, `driver-bling`, `wa-cloud`); `messaging:wa-terceiro` não existe mais no settings, no diretório `messaging/wa-terceiro/` nem no README; o build continua verde.
@@ -270,6 +270,7 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 - Jackson 3 (Boot 4): evitar `uniqueItems` e `additionalProperties` no schema; o teste de round-trip roda com o `ObjectMapper` do Boot 4.
 - Definir **um** evento de exemplo end-to-end: `venda.canonica.registrada` com um payload mínimo, só para validar o pipeline de geração.
 - Publicar `contracts` como dependência interna consumível por `core-api` e `drivers:*`.
+- **Gate do JaCoCo sem vacuidade (débito do REC-001, obrigatório; registrar no `spec.md`):** (a) excluir `build/generated/**` (classes do `jsonschema2pojo`) da base do gate e do relatório; (b) o `recorra.java-conventions` deve **falhar**, e não pular, quando o módulo tem classes de produção e nenhum dado de execução (sem teste). Provar no PR com teste.
 
 **Critérios de aceite.**
 - `./gradlew :contracts:build` gera as classes Java a partir do schema.
@@ -302,6 +303,7 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 - Métricas: Micrometer + `/actuator/prometheus`. (Logs, traceId e PII: REC-005.)
 - GitHub Actions com **triggers por path**: mudança em `contracts/**` → roda tudo; em `drivers/driver-bling/**` → só o driver-bling; cache Gradle; relatório JaCoCo como artefato.
 - No CI: validar os schemas contra o meta-schema e as fixtures contra os schemas (ex.: `networknt/json-schema-validator`; ADR-0001).
+- **Débitos do REC-001 (rev-warn/tech lead, obrigatórios):** (a) no perfil `prod`, `springdoc.api-docs.enabled=false` e `springdoc.swagger-ui.enabled=false` (não expor o contrato em produção; reverificar no REC-074); (b) no `recorra.java-conventions`, carregar o Mockito como `-javaagent` no `tasks.test` (recomendação do Mockito 5), eliminando o aviso de agente dinâmico do JDK.
 
 **Critérios de aceite.**
 - `docker compose up -d` sobe Postgres; app conecta no perfil dev.

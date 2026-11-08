@@ -30,7 +30,7 @@ O diferencial não é cadastro nem cashback (commodities), é a **recompra antec
 
 - **Ports & Adapters (hexagonal).** `core-api` é o domínio, **agnóstico de ERP**. Cada ERP tem um **driver** (anti-corruption layer) que traduz o ERP para um **modelo canônico** e empurra eventos ao core. Regra de ouro: o core nunca conhece um ERP concreto — proibido `if (erp == "bling")` no core.
 - **Contrato canônico** é a fonte da verdade entre core e drivers (modelo + eventos canônicos). Definido como **JSON Schema** (fonte única, draft-07) referenciado por AsyncAPI 3.0 e OpenAPI 3.1, com classes Java **geradas** pelo `jsonschema2pojo` — **decisão fechada na ADR-0001**.
-- **Monorepo** Gradle multi-módulo: `contracts`, `common`, `core-api`, `drivers/driver-sdk`, `drivers/driver-bling`, `messaging/wa-cloud` (e `messaging/wa-terceiro`, que existe no bootstrap mas está **fora do MVP**, ADR-0003, e será removido pelo REC-001). Deploy independente por serviço, CI por path.
+- **Monorepo** Gradle multi-módulo: `contracts`, `common`, `core-api`, `drivers/driver-sdk`, `drivers/driver-bling`, `messaging/wa-cloud` (`messaging/wa-terceiro` foi removido no REC-001: fora do MVP, ADR-0003). Deploy independente por serviço, CI por path.
 - **Read-only no ERP.** Drivers só leem; nunca escrevem venda/nota (elimina risco fiscal).
 - **Multi-tenant** por comércio (`comercio_id` + Row-Level Security no Postgres). Hierarquia `conta → comércio(unidade)`.
 - **WhatsApp é uma porta** (`MessagingPort`). No MVP existe **um único adapter: a API oficial da Meta (Cloud API, ~R$0,37/msg de marketing)**. O adapter de terceiro/não oficial foi cortado do MVP por risco de produto e jurídico (**ADR-0003**). A porta permanece para outro provedor oficial no futuro.
