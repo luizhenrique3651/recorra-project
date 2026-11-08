@@ -130,3 +130,7 @@ O gerador é **substituível**: se o `jsonschema2pojo` travar (ver riscos), troc
 3. [ ] REC-003: no CI, validar schemas e fixtures (ex.: `networknt/json-schema-validator`).
 4. [ ] REC-010: fechar todos os tipos/eventos, documentar a política SemVer no `contracts/README.md` e taguear `contracts-v0.1.0`.
 5. [x] Atualizar o `CONTEXTO-PROJETO.md` §3/§5: decisão nº 1 fechada.
+
+## Notas de alteração
+
+- 2026-11-08 — o transporte do MVP passou a ser HTTP de ingestão + outbox (REC-043); a menção a RabbitMQ acima fica como contexto da época. A decisão desta ADR não muda.
