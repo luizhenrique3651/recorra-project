@@ -7,7 +7,7 @@
 
 > Codinome de trabalho: **Recorra** (provisório). Este documento é a fonte para o desenvolvimento assistido por IA (Gemini Pro / Claude Code) em regime **Spec-Driven Development**: cada card vira uma `spec.md`, depois `plan.md`, depois código. As seções **Instruções de Desenvolvimento**, **Cenários de Teste** e **NÃO FAZER** de cada card são vinculantes.
 
-> **Marcadores desta revisão.** ⚠️ **DECISÃO PENDENTE DO USUÁRIO** = escolha que a auditoria deixou aberta; o card traz as opções e o padrão provisório (sempre a mais simples). 🆕 = card novo. ✂️ = card cortado ou movido. *Auditoria: Xn* = achado que motivou a mudança.
+> **Marcadores desta revisão.** ⚠️ **DECISÃO PENDENTE DO USUÁRIO** = escolha que a auditoria deixou aberta; o card traz as opções e o padrão provisório (sempre a mais simples). ✅ **DECIDIDO (2026-11-08)** = decisão tomada pelo usuário (ADR-0004 Opção B, REC-015 Opção A, REC-043 Opção A e os defaults de negócio); o texto do card já reflete a decisão. 🆕 = card novo. ✂️ = card cortado ou movido. *Auditoria: Xn* = achado que motivou a mudança.
 
 | EPIC | STORY | TASK | SPIKE | BUG |
 |---|---|---|---|---|
@@ -64,9 +64,9 @@ Qualquer varejo B2C com **consumível de recompra previsível e cliente identifi
 **Ação de reposição.** Para cada ciclo utilizável, quando `proxima_prevista − N ≤ hoje ≤ proxima_prevista + tolerância_de_atraso`, gera-se uma `AçãoRecomendada(REPOSICAO)` — **se** o cliente tiver opt-in (`ConsentPolicy`), o produto for **elegível à recompra**, o cliente não estiver **inativo** e não existir ação ativa idêntica.
 - `N` (janela de antecedência, ex.: 5 dias num ciclo de 40) tem **fonte única**: a config do comércio (REC-013), com default documentado. A `RegraVertical` (REC-062) só a estende.
 - **Atraso:** cliente atrasado (ou job parado por dias) ainda recebe a ação dentro da tolerância de atraso; além dela, não gera. **Inativo:** cliente sem compra há mais que o corte de inativo (REC-013) não gera ação (reativação é Fase 2).
-- **Expiração (⚠️ regra proposta, confirmar):** ação `PENDENTE` que passa de `proxima_prevista + tolerância_de_atraso` sem ser enviada vira `EXPIRADA`, inclusive quando o envio ficou bloqueado (template pendente, teto atingido). Nunca se envia uma reposição fora da janela.
+- **Expiração (default decidido em 2026-11-08):** ação `PENDENTE` que passa de `proxima_prevista + tolerância_de_atraso` sem ser enviada vira `EXPIRADA`, inclusive quando o envio ficou bloqueado (template pendente, teto atingido). Nunca se envia uma reposição fora da janela.
 - **Ação ativa idêntica:** mesma chave `(cliente, produto, tipo, janela)`, em que a janela é o ciclo vigente identificado pela data da `ultima_compra` (estável até nova compra).
-- **Teto de frequência por cliente:** vários produtos vencendo na mesma semana não viram N mensagens; limita-se por cliente (REC-041) — ⚠️ escolha proposta, confirmar: a auditoria deixou "consolidar OU limitar".
+- **Teto de frequência por cliente:** vários produtos vencendo na mesma semana não viram N mensagens; limita-se por cliente (REC-041) — **default decidido em 2026-11-08: LIMITAR** (consolidar vários produtos numa só mensagem vira Fase 2).
 
 **Ciclo de vida da ação:** `PENDENTE → ENVIADA → (CONVERTIDA | DESCARTADA)`, mais `EXPIRADA` (o cliente recomprou antes do envio, ou a ação PENDENTE passou da tolerância de atraso), `CANCELADA` (opt-out, venda cancelada ou produto inelegível depois da geração) e `FALHA` (envio rejeitado ou "não entregue por política" da Meta, sem reenvio). Detalhe em REC-040.
 
@@ -105,13 +105,13 @@ ACL = Anti-Corruption Layer · Canônico = modelo neutro de domínio · Outbox =
 
 **10 sprints de 2 semanas no MVP (S0–S9)** (+ backlog de Fase 2). Regime parcial: ~14–18h/semana. Velocidade conservadora: **~20–24 SP/sprint**. O prazo total do MVP é de **~5 meses**; a faixa cobre o risco da integração com o ERP e com a Meta (dependências externas de prazo longo, ver §2.2).
 
-> **Por que 10 sprints e não 8 (auditoria I7).** O plano original anunciava ~176 SP, mas os cards somavam 190 SP (os cabeçalhos de sprint estavam desatualizados). A auditoria acrescentou 49 SP de cards que faltavam e cortou/moveu/simplificou 20 SP (REC-052 −5, REC-073 −8, REC-012 −2, REC-074 −3, REC-043 −2) e o REC-013 subiu +2, ou seja, **corte LÍQUIDO de 18 SP (−20 e +2)**: o MVP passa a **221 SP**. A numeração dos sprints mudou e as dependências foram reordenadas (mapa abaixo). **Candidatos a corte se o prazo apertar (não aplicados):** REC-061 (higienização), parte de REC-060 (endpoints além de `/resumo` e `/oportunidades`), REC-064 opção React.
+> **Por que 10 sprints e não 8 (auditoria I7).** O plano original anunciava ~176 SP, mas os cards somavam 190 SP (os cabeçalhos de sprint estavam desatualizados). A auditoria acrescentou 49 SP de cards que faltavam e cortou/moveu/simplificou 20 SP (REC-052 −5, REC-073 −8, REC-012 −2, REC-074 −3, REC-043 −2) e o REC-013 subiu +2, ou seja, **corte LÍQUIDO de 18 SP (−20 e +2)**: o MVP passava a **221 SP**. *(Revisão das decisões de 2026-11-08: +5 SP do REC-016 e +2 SP do REC-043 → **228 SP**; o REC-015 concluído sai da conta → **227 SP**.)* A numeração dos sprints mudou e as dependências foram reordenadas (mapa abaixo). **Candidatos a corte se o prazo apertar (não aplicados):** REC-061 (higienização), parte de REC-060 (endpoints além de `/resumo` e `/oportunidades`), REC-064 opção React.
 
 | Spr. | Nome | Fase | SP | Foco principal |
 |---|---|---|---|---|
 | **0** | Fundação do Monorepo | Infra | 25 | Monorepo Gradle · contracts (geração) · driver-sdk · Postgres/Flyway · CI por path · ArchUnit · **logging/rastreabilidade/PII** |
-| **1** | Contrato Canônico, Tenant & IAM | Core | 24 | Contrato v0 · multi-tenant+RLS (jobs/admin) · IAM mínimo · spike Bling · ADRs (PII, montagem) |
-| **2** | Config do Comércio, Transporte, Ingestão & driver-stub | Core+Driver | 24 | Config única (janela N etc.) · **transporte driver→core (REC-043)** · consumo canônico idempotente · identidade do cliente · **driver-stub** |
+| **1** | Contrato Canônico, Tenant & IAM | Core | 28 | Contrato v0 · multi-tenant+RLS (jobs/admin) · IAM mínimo · spike Bling · ADR de PII · **componente de criptografia de PII (REC-016)** *(a decisão de montagem, REC-015, está concluída e fora da conta)* |
+| **2** | Config do Comércio, Transporte, Ingestão & driver-stub | Core+Driver | 26 | Config única (janela N etc.) · **transporte driver→core (REC-043: HTTP autenticado + outbox do driver)** · consumo canônico idempotente · identidade do cliente · **driver-stub** |
 | **3** | driver-bling & Consentimento | Driver+Core | 21 | OAuth Bling · captura (webhook/backfill) → canônico · **modelo de consentimento + `ConsentPolicy`** |
 | **4** | Motor de Recorrência | Core | 22 | Cálculo de ciclo/perfil · consolidação diária · recomputo reativo · consultas · elegibilidade de produto |
 | **5** | Ações & Outbox | Core | 21 | AçãoRecomendada (estados) · gerador de reposição · outbox (eventos internos) |
@@ -119,9 +119,9 @@ ACL = Anti-Corruption Layer · Canônico = modelo neutro de domínio · Outbox =
 | **7** | Envio, Opt-in & Conversão | Core | 21 | Consumer de envio + status · **captação de opt-in** · fila+feedback de ações · **atribuição automática de conversão** |
 | **8** | Visibilidade, Higienização & Config | Core | 21 | Dashboards · **resumo semanal ou UI mínima** · higienização · regras por vertical |
 | **9** | Hardening, LGPD & Piloto | Qualidade | 19 | Testes e2e · resiliência · LGPD · deploy simples do piloto |
-| | **TOTAL MVP** | | **221 SP** | (226 se o REC-064 for a UI React) |
+| | **TOTAL MVP** | | **227 SP** | (232 se o REC-064 for a UI React) |
 
-**Mapa de numeração (original → atual):** S0→S0 · S1→S1 · S2 (ingestão + driver-bling) → **S2 + S3** · S3 (motor) → **S4** · S4 (ações/outbox/broker) → **S5** · S5 (mensageria) → **S6 + S7** (adapter, onboarding e teto no S6; consumer de envio, opt-in e conversão no S7) · S6 (dashboard) → **S8** · S7 (hardening/piloto) → **S9**. A "prova do 2º driver" (REC-073) saiu do MVP: o driver-stub entra no S2 como ferramenta e a prova formal vem depois do piloto.
+**Mapa de numeração (original → atual):** S0→S0 · S1→S1 · S2 (ingestão + driver-bling) → **S2 + S3** · S3 (motor) → **S4** · S4 (ações/outbox) → **S5** · S5 (mensageria) → **S6 + S7** (adapter, onboarding e teto no S6; consumer de envio, opt-in e conversão no S7) · S6 (dashboard) → **S8** · S7 (hardening/piloto) → **S9**. A "prova do 2º driver" (REC-073) saiu do MVP: o driver-stub entra no S2 como ferramenta e a prova formal vem depois do piloto.
 
 ### 2.1 Fases e Marcos
 
@@ -143,7 +143,7 @@ Não são código e têm **prazo longo**. Dependem do usuário. Cada uma trava u
 | **F1** | **Suporte do Bling** | Usuário | REC-019, REC-022 | Contatar o suporte já: eventos de webhook de venda/nota, rate limits, escopos OAuth, formato do payload de pedido. Não esperar o S1. |
 | **F2** | **Onboarding da Meta** | Usuário | REC-051, REC-055, piloto | Iniciar Business verification; definir o WABA e o número do comércio-piloto; submeter o template de marketing de reposição para aprovação. |
 | **F3** | **Validação dos dados do comerciante-candidato** | Usuário (+ dev analisa) | S2 (REC-020), escolha do piloto | Obter um export real de vendas do Bling de um candidato e medir: % de vendas com cliente identificado, % com telefone, nº de clientes com ≥3 compras do mesmo SKU. Se for baixo, rever o beachhead antes de investir no S2. |
-| **F4** | **Papel LGPD e termo/DPA** | Usuário (+ jurídico) | Piloto; ADR-0004 | O comércio é o controlador e a plataforma, a operadora. Redigir e assinar o termo/DPA com o comerciante-piloto. |
+| **F4** | **Papel LGPD e termo/DPA** | Usuário (+ jurídico) | Piloto (a ADR-0004 já está Aceita; o DPA segue pendente) | O comércio é o controlador e a plataforma, a operadora. Redigir e assinar o termo/DPA com o comerciante-piloto. |
 | **F5** | **Beachhead e comerciante-piloto** | Usuário | S2 em diante | ⚠️ **DECISÃO PENDENTE DO USUÁRIO:** escolher vertical, ERP de praia e comerciante-piloto (informado por F3). |
 
 ---
@@ -330,7 +330,7 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 **Descrição.** Kit reaproveitável para escrever qualquer driver rapidamente, e as regras de arquitetura que impedem o vazamento core↔driver.
 
 **Instruções de desenvolvimento.**
-- `driver-sdk`: `ResilientErpClient` (WebClient + Resilience4j: circuit breaker e rate limiter; retry com `@Retryable` do Spring 7 ou Resilience4j — confirmar a versão compatível com o Boot 4, ADR-0002), `CanonicalPublisher` (interface que publica eventos canônicos; **o transporte é plugável**, conforme a decisão do REC-043: broker ou HTTP de ingestão), esqueleto de `WebhookReceiver` e `IncrementalPoller`, utilidades de idempotência (`IdempotencyKey`). O `CanonicalPublisher` propaga o `traceparent` (REC-005).
+- `driver-sdk`: `ResilientErpClient` (WebClient + Resilience4j: circuit breaker e rate limiter; retry com `@Retryable` do Spring 7 ou Resilience4j — confirmar a versão compatível com o Boot 4, ADR-0002), `CanonicalPublisher` (interface que publica eventos canônicos; **o transporte é plugável**; no MVP é o HTTP de ingestão idempotente, decisão do REC-043), esqueleto de `WebhookReceiver` e `IncrementalPoller`, utilidades de idempotência (`IdempotencyKey`). O `CanonicalPublisher` propaga o `traceparent` (REC-005).
 - ArchUnit (em `common` ou módulo de testes de arquitetura): `core-api` não importa `com.recorra.driver..`; nenhum driver importa domínio do core; a única ponte permitida é `com.recorra.contracts`.
 
 **Critérios de aceite.**
@@ -341,7 +341,7 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 - `Dado as regras ArchUnit / Quando um teste tenta importar driver a partir do core / Então o build falha`.
 - Teste do `ResilientErpClient` com WireMock: em 429, aplica backoff e respeita o rate limiter.
 
-**NÃO FAZER.** Não colocar regra de negócio no sdk; não acoplar o sdk a um ERP específico; não acoplar o `CanonicalPublisher` a RabbitMQ.
+**NÃO FAZER.** Não colocar regra de negócio no sdk; não acoplar o sdk a um ERP específico; não acoplar o `CanonicalPublisher` a um transporte específico.
 
 **Labels:** driver-sdk, archunit, resilience
 
@@ -357,7 +357,7 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 **Instruções de desenvolvimento.**
 - Logs em JSON (Logback) com `traceId`, `spanId` e `comercioId` (MDC) em `core-api`, `driver-bling` e demais apps.
 - Propagação do **W3C `traceparent`** em HTTP (entrada e saída) e nos **headers de mensagem** e no **outbox**: o `traceId` é gravado na linha do outbox (coluna criada no REC-042) e restaurado no consumidor. Na S0, entregar a infra reutilizável em `common` (filtro HTTP, utilitário de header, decorador do `CanonicalPublisher`).
-- **Conversor de mascaramento de PII** no appender: telefone, nome, CPF, e-mail e tokens/segredos (access/refresh, `Authorization`, HMAC). **Teste de appender** que falha se algum desses valores aparecer em claro.
+- **Conversor de mascaramento de PII** no appender: telefone, nome, CPF, e-mail e tokens/segredos (access/refresh, `Authorization`, HMAC), **além da chave mestra, das DEKs e dos keysets AEAD/MAC (ADR-0004)**. **Teste de appender** que falha se algum desses valores aparecer em claro.
 - **Contexto por unidade de trabalho:** todo job agendado, consumer de evento e handler de webhook, **para cada comércio processado**, abre o MDC `comercioId` + `traceId` (**novo** no job; **restaurado** do header/outbox no consumer) e **limpa o MDC ao final** (try/finally), inclusive em exceção. Utilitário em `common` usado pelo REC-011.
 - **Query string de rotas OAuth:** o access log e o log de request **omitem ou mascaram** os parâmetros `code`, `state` e `token` (ex.: `GET /driver/v1/bling/callback?code=***&state=***`). Teste de appender.
 - **Política de níveis:** stacktrace **uma única vez**, em `ERROR`, na borda (handler global/consumer); `WARN` **sem stacktrace** para rejeição de negócio; **nunca** logar body de request nem de webhook.
@@ -388,7 +388,7 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 ---
 
 ## Sprint 1 · Contrato Canônico, Tenant & IAM
-*Fase: Core · Semanas 3–4 · 24 SP*
+*Fase: Core · Semanas 3–4 · 28 SP (REC-015 concluído, fora da conta)*
 
 🎯 **Meta:** contrato canônico v0 fechado; isolamento por comércio (RLS, inclusive para jobs, consumers e admin); IAM mínimo; descoberta técnica do Bling; decisões de PII e de montagem registradas.
 
@@ -421,7 +421,7 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 ### REC-010 · [STORY] · 🔴 CRITICAL · 8 SP · EP-03
 **Contrato canônico v0 (modelo + eventos)**
 
-*Auditoria: I2 (evento de cancelamento), I4c (comando `mensagem.enviar` depende do REC-015), C2 (venda sem cliente).*
+*Auditoria: I2 (evento de cancelamento), I4c (comando `mensagem.enviar` fora do contrato, REC-015 Opção A decidida em 2026-11-08), C2 (venda sem cliente).*
 
 **Descrição.** Fechar o contrato que torna o core agnóstico. É o que permite core e drivers evoluírem em paralelo.
 
@@ -429,7 +429,7 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 - Em `contracts`, definir (como JSON Schema): `ClienteCanonico`, `ProdutoCanonico`, `EstoqueCanonico`, `VendaCanonica`+`ItemVendaCanonico`, `ComercioRef`.
 - `VendaCanonica.cliente` é **opcional** (venda sem cliente identificado é válida no contrato; a política está no REC-020). `ClienteCanonico.telefone` é uma **string como veio do ERP** (a normalização E.164 é do core, REC-024).
 - Eventos: `venda.canonica.registrada`, **`venda.canonica.cancelada`** (venda cancelada ou devolvida no ERP), `cliente.canonico.upsert`, `produto.canonico.upsert`, `estoque.canonico.atualizado`, `driver.conexao.status`.
-- Comando `mensagem.enviar` (core → MessagingPort): **⚠️ presença no v0 depende da decisão do REC-015.** Padrão: **não entra no contrato** (o `MessagingPort` é uma interface in-process; não há segundo consumidor do comando).
+- Comando `mensagem.enviar` (core → MessagingPort): **fica FORA do contrato** (decisão do REC-015, Opção A, 2026-11-08: o `MessagingPort` é uma interface in-process; não há segundo consumidor do comando).
 - Versionar o contrato com SemVer; documentar a política (breaking = major) em `contracts/README.md`.
 - Gerar classes e validar round-trip em core e driver. Taguear `contracts-v0.1.0`.
 
@@ -497,12 +497,12 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 - Spring Security como **OAuth2 Resource Server** (`spring-boot-starter-security-oauth2-resource-server`, ADR-0002) validando JWT. JWK URI por env.
 - ⚠️ **DECISÃO PENDENTE DO USUÁRIO — IdP (CONTEXTO §5.4):** Keycloak (self-host, mais operação) × Cognito (gerenciado, mais simples de operar, menos flexível). O card é implementado contra o padrão OIDC e não depende da escolha, salvo o ambiente de teste (use um JWT assinado de teste/WireMock do JWKS). A escolha precisa sair antes do deploy do piloto (REC-074).
 - **Papéis no MVP: `SUPER_ADMIN` (operador da plataforma) e `OWNER`.** `MANAGER` e `SELLER` ficam na Fase 2. Claims: `sub`, `comercio_id`, `roles`.
-- `SecurityFilterChain`: `/api/v1/**` autenticado; `/actuator/health`, `/webhooks/**`, `/swagger-ui/**` conforme política; `@PreAuthorize` por papel. CSRF off (stateless).
+- `SecurityFilterChain`: `/api/v1/**` autenticado; a rota de **ingestão driver→core** (REC-043) também é autenticada, com **HMAC por driver** (assinatura da requisição, segredo por driver, **independente do IdP**, decisão de 2026-11-08; segredo em variável de ambiente no piloto e no gestor de segredos no REC-074, mascarado em log, REC-005) e a checagem driver × `comercio_id` (detalhe no REC-043); essa rota não usa JWT; `/actuator/health`, `/webhooks/**`, `/swagger-ui/**` conforme política; `@PreAuthorize` por papel. CSRF off (stateless).
 
 **Critérios de aceite.**
 - Rota restrita a SUPER_ADMIN → 403 para OWNER.
 - Token inválido/expirado → 401.
-- `/webhooks/**` não exige JWT (usa HMAC próprio).
+- `/webhooks/**` não exige JWT (usa HMAC próprio); a ingestão driver→core **não** é pública (REC-043).
 
 **Cenários de teste.**
 - `Dado usuário OWNER / Quando acessa rota SUPER_ADMIN / Então 403`.
@@ -520,14 +520,15 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 
 *Auditoria: I5. Precisa estar **Aceita antes do REC-020**, porque muda o schema de `cliente`.*
 
-**Descrição.** Fechar a ADR-0004 (hoje **Proposta**, com as opções A/B/C). É uma decisão do usuário; este card existe para que ela seja tomada no S1 e refletida nos cards seguintes.
+**Descrição.** Fechar a ADR-0004. **✅ DECIDIDO em 2026-11-08: Opção B** (ADR **Aceita**). Este card registra a decisão e a reflete nos cards seguintes.
 
 **Instruções de desenvolvimento.**
-- ⚠️ **DECISÃO PENDENTE DO USUÁRIO:** escolher a opção da ADR-0004 (A: criptografia de volume/banco; B: criptografia por coluna na aplicação com índice cego; C: `pgcrypto`), as colunas cifradas, o escopo da chave (global × por comércio) e como o telefone é buscado/deduplicado.
-- Atualizar o Status da ADR-0004 para "Aceita" e refletir a decisão em REC-020 (schema) e REC-024 (dedup por telefone).
+- ✅ **DECIDIDO (2026-11-08): Opção B — criptografia por coluna na aplicação (AES-GCM).** Colunas cifradas: **telefone, CPF, e-mail e NOME**. **Índice cego (HMAC) no telefone** para busca e deduplicação. **Chave POR COMÉRCIO** sob uma **chave mestra**: no piloto a mestra fica em **variável de ambiente**; no deploy definitivo, **KMS/Secrets Manager (REC-074)**. A chave por comércio **permite** excluir os dados de um comércio descartando a chave; **o modo de exclusão (comércio e cliente) e a retenção ficam para o REC-072** (o usuário decidiu não fixá-los agora). O esquema técnico (chave aleatória/DEK em envelope, subchaves, nonce, AAD, versão) está na ADR-0004 e é implementado no REC-016.
+- ADR-0004 com Status "Aceita" (feito), Consequências e itens de ação preenchidos; decisão refletida em REC-016 (componente), REC-020 (colunas `*_cifrado` + `telefone_hash`), REC-024 (dedup pelo índice cego), REC-035/REC-054 (chave do consentimento), REC-021/REC-055 (segredos, como consequência derivada) e REC-072.
+- **Seguem pendentes (fora deste card):** termo/DPA com o comércio (frente F4) e política de retenção e modo de exclusão (REC-072, S9).
 - Registrar o papel LGPD (comércio = controlador, plataforma = operadora) e o estado do termo/DPA (frente F4).
 
-**Critérios de aceite.** ADR-0004 "Aceita"; REC-020/REC-024 citam a opção escolhida.
+**Critérios de aceite.** ADR-0004 "Aceita" (**atendido em 2026-11-08**); REC-020/REC-024 citam a opção escolhida.
 
 **Cenários de teste.** N/A (decisão documental).
 
@@ -540,18 +541,20 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 ### REC-015 · 🆕 [SPIKE] · 🟠 HIGH · 1 SP · EP-07
 **Decisão de montagem: onde roda o adapter de WhatsApp e como o core envia**
 
+**Estado: concluído — decisão de 2026-11-08.** O card fica como registro; seu 1 SP **não entra na conta do S1** (S1 = 28 SP).
+
 *Auditoria: I4b e I4c. Resolve a contradição entre o REC-050 ("core compila sem adapter") e o `wa-cloud` como lib; e entre o comando `mensagem.enviar` no contrato e o `MessagingPort` in-process.*
 
 **Descrição.** Escolher e registrar (ADR curta ou seção na `spec.md` do REC-050) duas coisas: (b) em qual aplicação o `wa-cloud` roda e em qual mora o `/webhooks/whatsapp`; (c) se o envio é um **comando no contrato** ou uma **chamada in-process** à porta.
 
 **Opções.**
-- **Opção A (padrão provisório — a mais simples):** `MessagingPort` é uma interface **in-process** do core. O `wa-cloud` é uma lib ligada ao `core-api` só em **runtime** (`runtimeOnly`; fora do classpath de compilação do core, com ArchUnit garantindo que o core não importa o adapter), descoberta por configuração Spring. O `/webhooks/whatsapp` mora no próprio `core-api`, no pacote do adapter, e entrega o status ao core por uma porta definida no core. O comando `mensagem.enviar` **não** entra no contrato.
+- **Opção A (ESCOLHIDA em 2026-11-08):** `MessagingPort` é uma interface **in-process** do core. O `wa-cloud` é uma lib ligada ao `core-api` só em **runtime** (`runtimeOnly`; fora do classpath de compilação do core, com ArchUnit garantindo que o core não importa o adapter), descoberta por configuração Spring. O `/webhooks/whatsapp` mora no próprio `core-api`, no pacote do adapter, e entrega o status ao core por uma porta definida no core. O comando `mensagem.enviar` **não** entra no contrato.
 - **Opção B:** `wa-cloud` é um serviço separado (como um driver) que consome o comando `mensagem.enviar` do contrato e publica `mensagem.status`. Mais isolado, mais peças para operar; exige transporte (REC-043) também para o envio.
 - **Opção C:** módulo de montagem (um app fino que depende de `core-api` como lib e de `wa-cloud`). Mantém o core puro, mas cria um novo módulo e muda a estrutura do REC-001.
 
-⚠️ **DECISÃO PENDENTE DO USUÁRIO.** Enquanto não decidir, vale a Opção A.
+✅ **DECIDIDO em 2026-11-08: Opção A.** `MessagingPort` in-process; `wa-cloud` entra no `core-api` só como `runtimeOnly` (com ArchUnit); o `/webhooks/whatsapp` fica no `core-api`; o comando `mensagem.enviar` fica **FORA do contrato**. As Opções B e C ficam como registro histórico.
 
-**Critérios de aceite.** Decisão registrada; REC-010, REC-050 e REC-053 alinhados a ela.
+**Critérios de aceite.** Decisão registrada (Opção A, 2026-11-08); REC-010, REC-050 e REC-053 alinhados a ela.
 
 **Cenários de teste.** N/A (decisão documental). Consequência técnica verificável no REC-050: ArchUnit falha se o core importar o adapter.
 
@@ -560,14 +563,52 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 **Labels:** adr, arquitetura, messaging, decisão
 
 ---
+
+### REC-016 · 🆕 [STORY] · 🔴 CRITICAL · 5 SP · EP-02
+**Componente de criptografia de PII (PiiCipher, BlindIndex, envelope de chaves)**
+
+*Estimativa de 5 SP **condicionada** a: (i) usar Tink, não cripto montada à mão; (ii) sem o job de rotação do HMAC (só desenho + versão no ciphertext). Revisão do techlead (2026-11-08), item 9: nenhum card era dono do componente que a ADR-0004 (Opção B) exige. O REC-020 e o REC-024 **consomem** este card; não o reimplementam.*
+
+**Descrição.** Entregar, em **`common`** (não no `core-api`: o driver também o usa, REC-021), o componente que cifra/decifra colunas de PII e calcula o índice cego, conforme o esquema técnico da ADR-0004. Fica no S1 porque o schema do REC-020 (S2) depende dele.
+
+**Instruções de desenvolvimento.**
+- **Biblioteca: Google Tink** (AEAD + keyset em envelope), **não** AES-GCM + HKDF montados à mão. Adicionar o Tink ao `gradle/libs.versions.toml` **só neste card** (não antes).
+- `PiiCipher`: AEAD (AES-GCM, via Tink) por coluna; nonce aleatório (96 bits) por cifra, sem reuso; AAD = `comercio_id` + coluna; **versão da chave no ciphertext**; exceção tipada na falha de decifra (tag inválida ou chave ausente), sem engolir.
+- `BlindIndex`: HMAC do telefone E.164 com o keyset **MAC por comércio** (Tink), separado do keyset AEAD.
+- Envelope: **DEK aleatória por comércio** (keyset do Tink), guardada cifrada pela **mestra**; a mestra vem de variável de ambiente (piloto), atrás de uma interface (`MasterKeyProvider`) trocável por KMS/Secrets Manager no REC-074. Descartar a DEK inutiliza os dados do comércio (se o REC-072 escolher esse modo de exclusão).
+- **Tabela de DEKs do core:** migration **`V0102__chave_comercio.sql`** (depois do `V0101` do REC-011, na ordem do S1) com `comercio_id`, `dek_aead_cifrada`, `dek_mac_cifrada` (os dois keysets Tink do comércio, ambos sob a mestra), `versao` e `criado_em`; `comercio_id` + RLS. O driver (REC-021) só precisa do keyset AEAD. **Quem cria a DEK:** a criação do comércio (REC-011/REC-013) chama o componente, na mesma transação. Os jobs/consumers leem a DEK **no contexto do tenant** (RLS), nunca por consulta fora dele.
+- Conversores/utilitários para uso pelas entidades (ex.: `AttributeConverter`), para o REC-020, REC-021 e REC-055 reutilizarem.
+- **Fora do escopo:** o job de rotação do HMAC. Entra só o **desenho** na `spec.md` (recalcular `telefone_hash` em `cliente`, `consentimento` e trilha no mesmo job, com o `unique` ativo); a **versão no ciphertext** permanece para a rotação futura.
+- Mascaramento de log (REC-005) cobrindo a mestra, as DEKs e os keysets AEAD/MAC.
+
+**Critérios de aceite.**
+- Duas cifras do mesmo valor produzem ciphertexts diferentes; decifrar devolve o valor.
+- Mesmo telefone em formatos distintos (após o normalizador do REC-024) → mesmo `telefone_hash`; o mesmo telefone em 2 comércios → `telefone_hash` diferente.
+- Decifrar com a chave de outro comércio ou com AAD diferente falha com a exceção tipada.
+- Nenhuma chave aparece em log, `toString` ou resposta de API.
+
+**Cenários de teste.**
+- `Dado o mesmo valor cifrado 2x / Então os ciphertexts são diferentes`.
+- `Dado ciphertext do comércio A / Quando decifrado com a chave do B / Então falha tipada`.
+- `Dado o mesmo telefone em 2 comércios / Então telefone_hash diferente`.
+- `Dado ciphertext adulterado / Então tag inválida e exceção tipada (sem valor no log)`.
+- `Dado DEK descartada / Então os dados do comércio não são mais decifráveis`.
+- Teste de appender: mestra, DEK e keysets AEAD/MAC não saem em log.
+
+**NÃO FAZER.** Montar AES-GCM/HKDF à mão em vez do Tink; implementar o job de rotação do HMAC; adicionar o Tink ao catálogo antes deste card; chave derivada de forma determinística da mestra como "chave por comércio"; reuso de nonce; mesma chave para AEAD e MAC; HMAC global; implementar KMS agora (REC-074); decidir exclusão/retenção (REC-072); logar chave ou valor.
+
+**Labels:** pii, criptografia, lgpd, segurança
+
+---
+
 ---
 
 ## Sprint 2 · Config do Comércio, Transporte, Ingestão & driver-stub
-*Fase: Core + Driver · Semanas 5–6 · 24 SP*
+*Fase: Core + Driver · Semanas 5–6 · 26 SP*
 
 🎯 **Meta (marco):** uma venda gerada pelo **driver-stub** aparece consolidada no core, com cliente identificado e telefone em E.164, **sem o core saber de nenhum ERP**. Valida a arquitetura Ports & Adapters ponta a ponta sem depender do Bling.
 
-> **Gate:** a frente F3 (validação dos dados do comerciante-candidato) deve estar feita e o REC-014 (ADR-0004) **Aceito** antes de começar o REC-020. **A decisão do transporte (REC-043) também bloqueia o S2**: o `driver-stub` e o `driver-bling` são processos separados do core e precisam de um canal para entregar eventos. Ordem no sprint: REC-013 → REC-043 → REC-020 → REC-024 → REC-023.
+> **Gate:** a frente F3 (validação dos dados do comerciante-candidato) deve estar feita e o REC-014 (ADR-0004, **Aceita em 2026-11-08**) antes de começar o REC-020. **O transporte (REC-043, HTTP de ingestão + outbox, decidido em 2026-11-08) é pré-requisito do S2**: o `driver-stub` e o `driver-bling` são processos separados do core e precisam de um canal para entregar eventos. Ordem no sprint (o REC-016 já vem do S1): REC-013 → REC-043 → REC-020 → REC-024 → REC-023.
 
 ### REC-013 · [STORY] · 🟠 HIGH · 5 SP · EP-02
 **Onboarding de comércio + configuração única do comércio**
@@ -581,17 +622,17 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 - `POST /api/v1/comercios` (SUPER_ADMIN): cria `comercio` com `erp` e `vertical`, status `PENDENTE`.
 - `GET /api/v1/comercios/{id}`; `PATCH /comercios/{id}/config`. `POST/PATCH /users` (papel `OWNER`).
 - Estados: `PENDENTE → CONECTADO → ATIVO`. Erros RFC 7807.
-- **Config do comércio (fonte única, com default documentado em código e neste card):**
+- **Config do comércio (fonte única, com default documentado em código e neste card; todos os defaults são configuráveis por comércio — decididos em 2026-11-08, exceto o fuso):**
 
 | Parâmetro | Uso | Default |
 |---|---|---|
-| `janela_n_dias` | antecedência do gatilho de reposição (N) | **5** (exemplo do §1.4) — ⚠️ valor proposto, confirmar |
-| `fuso_horario` | define "hoje" para jobs e janelas | `America/Sao_Paulo` — ⚠️ valor proposto, confirmar (o piloto pode ser em Manaus, `America/Manaus`, UTC−4) |
-| `tolerancia_atraso_dias` | quanto depois de `proxima_prevista` ainda se gera ação; também o prazo em que uma ação PENDENTE vira `EXPIRADA` | igual a `janela_n_dias` — ⚠️ regra proposta, confirmar |
-| `corte_inativo_ciclos` | cliente sem compra há mais de X× o intervalo é inativo | **2** — ⚠️ valor proposto, confirmar |
-| `max_acoes_cliente_semana` | teto de frequência por cliente (REC-041) | **1** — ⚠️ valor proposto, confirmar |
-| `janela_atribuicao_dias` | X da atribuição de conversão (REC-063) | **7** — ⚠️ valor proposto, confirmar |
-| `teto_mensagens_mes` | orçamento de envio (REC-056) | **não definido = envio bloqueado** até configurar — ⚠️ regra proposta, confirmar |
+| `janela_n_dias` | antecedência do gatilho de reposição (N) | **5** (exemplo do §1.4) — default decidido em 2026-11-08 |
+| `fuso_horario` | define "hoje" para jobs e janelas | `America/Sao_Paulo` (**provisório**) — ⚠️ **a definir com o piloto (F5)** (o piloto pode ser em Manaus, `America/Manaus`, UTC−4) |
+| `tolerancia_atraso_dias` | quanto depois de `proxima_prevista` ainda se gera ação; também o prazo em que uma ação PENDENTE vira `EXPIRADA` | igual a `janela_n_dias` — default decidido em 2026-11-08 |
+| `corte_inativo_ciclos` | cliente sem compra há mais de X× o intervalo é inativo | **2** — default decidido em 2026-11-08 |
+| `max_acoes_cliente_semana` | teto de frequência por cliente (REC-041) | **1** — default decidido em 2026-11-08 |
+| `janela_atribuicao_dias` | X da atribuição de conversão (REC-063) | **7** — default decidido em 2026-11-08 |
+| `teto_mensagens_mes` | orçamento de envio (REC-056) | **não definido = envio bloqueado** até configurar — default decidido em 2026-11-08 |
 | `messaging_provider` | adapter do comércio (REC-050) | `oficial` (único valor no MVP) |
 
 - O REC-041 e o REC-062 **leem** `janela_n_dias`; o REC-062 só estende (override por vertical).
@@ -612,30 +653,38 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 
 ---
 
-### REC-043 · [STORY] · 🔴 CRITICAL · 3 SP · EP-01
-**Transporte de eventos — ⚠️ DECISÃO PENDENTE DO USUÁRIO (RabbitMQ × HTTP de ingestão + outbox)**
+### REC-043 · [STORY] · 🔴 CRITICAL · 5 SP · EP-01
+**Transporte de eventos — ✅ DECIDIDO em 2026-11-08: HTTP de ingestão idempotente + outbox (Opção A)**
 
-*Auditoria: E3 (recomendação, não ordem). Antes: "RabbitMQ — exchanges, filas, DLQ" (5 SP, com endpoint admin de DLQ). Agora: 3 SP em qualquer das opções, **sem endpoint admin de DLQ no MVP**.*
+*Auditoria: E3 (recomendação, não ordem). Antes: "RabbitMQ — exchanges, filas, DLQ" (5 SP, com endpoint admin de DLQ). Agora: **5 SP** (eram 3; +2 pela autenticação da ingestão e pela durabilidade no driver, revisão de 2026-11-08), **sem endpoint admin de DLQ**; decidido em 2026-11-08: HTTP + outbox.*
 
-**Descrição.** Para o piloto (1 comércio), escolher como o driver entrega eventos ao core. **Está no S2, antes do REC-020/023/022**: o driver é outro processo e precisa de um canal para falar com o core. O outbox (REC-042, S5) trata dos eventos **internos** do core e **não é pré-requisito** deste card. **A decisão bloqueia o S2.**
+**Descrição.** Para o piloto (1 comércio), escolher como o driver entrega eventos ao core. **Está no S2, antes do REC-020/023/022**: o driver é outro processo e precisa de um canal para falar com o core. O outbox (REC-042, S5) trata dos eventos **internos** do core e **não é pré-requisito** deste card. **A decisão (tomada em 2026-11-08: Opção A) destrava o S2.**
 
-**Opções.**
-- **Opção A — HTTP + outbox (padrão provisório — a mais simples):** o driver envia os eventos canônicos ao core por **HTTP de ingestão idempotente** (o OpenAPI de ingestão já existe na ADR-0001, `ingestao.openapi.yaml`); os eventos internos do core usam outbox + poller no Postgres (REC-042, S5). Sem broker para operar. Reentrega com backoff no driver; rejeição definitiva vai para uma tabela de falhas de ingestão (migration `V0204__falhas_ingestao.sql`).
-- **Opção B — RabbitMQ:** Spring AMQP (`spring-boot-starter-amqp`; renomeado `-rabbitmq` no 4.2, ADR-0002); topic exchange; filas por evento + DLX/DLQ; retry com backoff. **Sem** `POST /admin/dlq/{fila}/reprocessar` no MVP (reprocessar pelo console do RabbitMQ).
+**Decisão e alternativa.**
+- **Opção A — HTTP + outbox (ESCOLHIDA em 2026-11-08; é o transporte do MVP):** o driver envia os eventos canônicos ao core por **HTTP de ingestão idempotente** (o OpenAPI de ingestão já existe na ADR-0001, `ingestao.openapi.yaml`); os eventos internos do core usam outbox + poller no Postgres (REC-042, S5). Sem broker para operar. **Durabilidade no driver (decisão do usuário, 2026-11-08):** o driver **persiste antes de responder 202** um **outbox que guarda SÓ A REFERÊNCIA** (`erp_venda_id` + tipo do evento; pode reaproveitar a tabela de dedup com status). Na **reentrega** (com backoff), o driver **busca o pedido de novo no Bling** e republica; a reentrega **respeita o rate limit do Bling**. **Não há PII em repouso no driver por causa do outbox.** A memória do driver nunca é a única cópia da intenção de entrega. Esse **outbox durável é peça reutilizável do `driver-sdk`** (entregue neste card), e não código do driver-bling. **Falhas:** `V0204__falhas_ingestao.sql` fica **no core** e guarda a rejeição definitiva (4xx); no **driver**, o evento com tentativas esgotadas fica marcado como falho na própria tabela de outbox do driver (com `traceId`, classe e motivo; sem payload, pois só há a referência).
+- **Autenticação da ingestão:** o endpoint de ingestão **não é público**. **Decisão do usuário (2026-11-08):** a credencial do driver no core é um **segredo/HMAC POR DRIVER** (assinatura da requisição), **independente do IdP**. O segredo fica em **variável de ambiente no piloto** e no **gestor de segredos no REC-074**, é **mascarado em log** (REC-005) e nunca vai em resposta de API. A rota entra no `SecurityFilterChain` do REC-012 com um filtro de verificação de HMAC (como nos webhooks), sem JWT. O core valida que o driver está **autorizado para o `comercio_id` do evento** (o tenant não vem confiável do corpo). TLS obrigatório fora da rede interna.
+- **Opção B — RabbitMQ (registro histórico / alternativa futura; NÃO é opção do MVP, não implementar):** Spring AMQP (`spring-boot-starter-amqp`; renomeado `-rabbitmq` no 4.2, ADR-0002); topic exchange; filas por evento + DLX/DLQ; retry com backoff. **Sem** `POST /admin/dlq/{fila}/reprocessar` no MVP (reprocessar pelo console do RabbitMQ).
 
-**Instruções de desenvolvimento (comuns).** Implementar a opção escolhida atrás do `CanonicalPublisher` (REC-004) e da porta de entrada do REC-020, sem mudar o contrato. Kafka fica documentado como migração futura.
+**Instruções de desenvolvimento.** Implementar a Opção A atrás do `CanonicalPublisher` (REC-004) e da porta de entrada do REC-020, sem mudar o contrato. Kafka fica documentado como migração futura.
 
-**Rastreabilidade das falhas (obrigatório, REC-005).** Cada registro de falha (linha da tabela de falhas na A; mensagem na DLQ na B) grava o **`traceId`**, a **classe da exceção** e o **motivo** do erro. O **payload** só é guardado se não tiver PII, ou conforme a ADR-0004 e a política de retenção (REC-072); caso contrário guarda-se só a referência (`erp_venda_id`, tipo de evento). O log da falha segue a política de níveis do REC-005 (um único `ERROR` na borda, sem body).
+**Rastreabilidade das falhas (obrigatório, REC-005).** Cada registro de falha (linha da tabela de falhas de ingestão) grava o **`traceId`**, a **classe da exceção** e o **motivo** do erro. **Regra fechada do payload:** nem o outbox do driver nem a tabela de falhas guardam payload com PII: guarda-se **só a referência** (`erp_venda_id` + tipo de evento). Se um dia algum registro precisar do payload, só **cifrado com a DEK do comércio** (ADR-0004/REC-016). **Nunca em claro.** A retenção desse registro fica no REC-072. O log da falha segue a política de níveis do REC-005 (um único `ERROR` na borda, sem body). **Log obrigatório:** (a) rejeição de autenticação/autorização = `WARN` com `traceId`, `driverId` e `comercio_id`, **sem body e sem PII**; (b) tentativas esgotadas no driver = **um `ERROR`** com `traceId`, `erp_venda_id` e tipo do evento, **sem payload**; (c) métrica de **backlog pendente por comércio** (outbox do driver).
 
-**Critérios de aceite.** Evento do driver chega ao core de forma idempotente; falha repetida não perde mensagem (DLQ na B; tabela de falhas/reentrega na A); toda falha registra `traceId`, classe e motivo.
+**Critérios de aceite.** *(Estimativa: 5 SP, com o outbox durável no `driver-sdk` e a assinatura HMAC por driver.)* Evento do driver chega ao core de forma idempotente; falha repetida não perde mensagem (tabela de falhas de ingestão + reentrega com backoff); toda falha registra `traceId`, classe e motivo; ingestão sem credencial válida é rejeitada; o evento sobrevive a reinício do driver.
 
 **Cenários de teste.**
 - `Dado evento do driver / Quando entregue / Então o core consolida uma vez`.
 - `Dado o mesmo evento 2x / Então estado idêntico`.
 - `Dado uma falha definitiva de ingestão / Então o registro tem traceId, classe do erro e motivo, e o payload não traz PII em claro`.
-- A: `Dado core indisponível / Então o driver reenvia com backoff`. B: `Dado consumidor que falha N vezes / Então mensagem vai à DLQ`.
+- `Dado core indisponível / Então o driver reenvia com backoff`.
+- `Dado o driver reiniciado durante o backoff / Então a referência persistida é reentregue depois (o pedido é buscado de novo no Bling)`.
+- `Dado SELECT na tabela do outbox do driver / Então não há PII (só erp_venda_id e tipo)`.
+- `Dado reentrega de muitos eventos / Então o rate limit do Bling é respeitado`.
+- `Dado requisição de ingestão com assinatura HMAC inválida / Então 401 e nada persiste`.
+- `Dado ingestão sem credencial / Então 401 e nada persiste`.
+- `Dado driver que posta para um comercio_id ao qual não está vinculado / Então 403, nada persiste e WARN com traceId, driverId e comercio_id (sem body/PII)`.
+- `Dado tentativas esgotadas no driver / Então um ERROR com traceId, erp_venda_id e tipo (sem payload) e o backlog por comércio aparece na métrica`.
 
-**NÃO FAZER.** Kafka agora; perder mensagem sem DLQ/tabela de falhas; endpoint admin de DLQ no MVP; mudar o contrato por causa do transporte; gravar payload com PII em claro na tabela de falhas/DLQ.
+**NÃO FAZER.** Kafka ou RabbitMQ agora; guardar o payload (PII) no outbox do driver; depender do IdP para a credencial do driver; endpoint de ingestão sem autenticação; confiar no `comercio_id` do corpo sem checar o vínculo do driver; guardar o evento só em memória antes do 202; perder mensagem sem tabela de falhas; endpoint admin de reprocessamento no MVP; mudar o contrato por causa do transporte; gravar payload com PII em claro na tabela de falhas.
 
 **Labels:** transporte, mensageria, decisão
 
@@ -643,16 +692,16 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 ### REC-020 · [STORY] · 🔴 CRITICAL · 8 SP · EP-05
 **Consumo de eventos canônicos e consolidação idempotente**
 
-*Auditoria: C2 (venda sem cliente), I2 (cancelamento, fuso), I5 (PII), E2 (sem Redis), E3 (transporte). A normalização E.164 e a dedup de cliente foram para o REC-024 (divisão para respeitar a escala de SP).*
+*Revisão de decisões 2026-11-08: o componente de cifra é do REC-016 (S1); o REC-020 o consome e continua em 8 SP. Auditoria: C2 (venda sem cliente), I2 (cancelamento, fuso), I5 (PII), E2 (sem Redis), E3 (transporte). A normalização E.164 e a dedup de cliente foram para o REC-024 (divisão para respeitar a escala de SP).*
 
 **Descrição.** O core recebe eventos canônicos (de qualquer driver) e materializa Cliente/Produto/Venda/Item na base consolidada, sem jamais saber a origem.
 
 **Instruções de desenvolvimento.**
-- Entidades canônicas no core: `cliente`, `produto`, `venda`, `item_venda` (migration `V0202__ingestao.sql`), com `comercio_id` + RLS e uniques `erp_venda_id`/`erp_cliente_id`/`erp_produto_id` por comércio. **Colunas de PII conforme a ADR-0004** (Aceita no REC-014). **A idempotência é a constraint `unique` no Postgres; não há Redis.**
-- Consumers de `venda.canonica.registrada`, `venda.canonica.cancelada`, `cliente.canonico.upsert`, `produto/estoque`. A porta de entrada é o **transporte decidido no REC-043** (que vem **antes** neste sprint): driver e core são processos distintos, então não há adaptador in-process. Tenant a partir do `comercio_id` do evento (REC-011). Upsert idempotente.
+- Entidades canônicas no core: `cliente`, `produto`, `venda`, `item_venda` (migration `V0202__ingestao.sql`), com `comercio_id` + RLS e uniques `erp_venda_id`/`erp_cliente_id`/`erp_produto_id` por comércio. **Colunas de PII conforme a ADR-0004** (Opção B, Aceita em 2026-11-08): `nome_cifrado`, `telefone_cifrado`, `cpf_cifrado`, `email_cifrado` (AES-GCM, DEK por comércio, via `PiiCipher` do **REC-016**), **`telefone_hash`** (índice cego HMAC via `BlindIndex`; usado em busca e `unique (comercio_id, telefone_hash)`) e a **versão da chave** (`chave_versao` ou prefixo do ciphertext). Nenhuma PII em claro nas colunas nem na tabela de falhas de ingestão. **A idempotência é a constraint `unique` no Postgres; não há Redis.**
+- Consumers de `venda.canonica.registrada`, `venda.canonica.cancelada`, `cliente.canonico.upsert`, `produto/estoque`. A porta de entrada é o **HTTP de ingestão idempotente** (REC-043, decidido em 2026-11-08, que vem **antes** neste sprint): driver e core são processos distintos, então não há adaptador in-process. Tenant a partir do `comercio_id` do evento (REC-011). Upsert idempotente.
 - **Venda sem cliente identificado:** não entra no motor. A venda é **ignorada para fins de recorrência** e contada na métrica `vendas_sem_cliente_total` (por comércio). Decisão de persistir ou não a venda "anônima" fica na `spec.md`; o requisito é que ela **não gere perfil/ciclo** e seja **contada**.
 - **Venda cancelada/devolvida** (`venda.canonica.cancelada`): marca a venda como cancelada, **exclui-a do histórico** de recorrência e dispara o recomputo do cliente (emite `venda.persistida`).
-- Derivar `qualidade_cadastro` do cliente (mínimo/parcial/completo). Emitir `venda.persistida` (evento **interno**).
+- Derivar `qualidade_cadastro` do cliente (mínimo/parcial/completo) **na ingestão**, a partir do valor em claro ainda em memória; ela é gravada como coluna e é a única fonte para higienização/filtros (REC-061), pois o nome cifrado não permite SQL. Emitir `venda.persistida` (evento **interno**).
 - "Hoje"/datas de negócio no fuso do comércio (REC-013).
 
 **Critérios de aceite.**
@@ -661,6 +710,8 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 - Venda sem cliente não gera perfil/ciclo e incrementa a métrica.
 - Cancelamento tira a venda do histórico e dispara o recomputo.
 - O core não referencia nenhum tipo específico de ERP.
+- Nome, telefone, CPF e e-mail ficam cifrados no banco (consumindo o REC-016, sem reimplementá-lo).
+- **Falha de decifra** (tag AES-GCM inválida ou chave ausente) → `ERROR` com `traceId`, `comercio_id`, coluna e versão da chave, **nunca** ciphertext nem valor; exceção tipada, sem engolir.
 
 **Cenários de teste.**
 - `Dado um evento de venda / Quando consumido / Então venda+itens+cliente persistem`.
@@ -669,6 +720,9 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 - `Dado venda sem cliente / Quando consumida / Então não cria perfil/ciclo e vendas_sem_cliente_total aumenta`.
 - `Dado venda.canonica.cancelada / Quando consumida / Então a venda sai do histórico e o recomputo é disparado`.
 - `Dado evento sem comercio_id / Então rejeitado`.
+- `Dado um cliente persistido / Quando faço SELECT direto na tabela / Então nome, telefone, CPF e e-mail não aparecem em claro`.
+- `Dado o mesmo valor de PII em 2 clientes / Então os ciphertexts são diferentes`.
+- `Dado decifrar com a chave de outro comércio / Então falha tipada e ERROR com traceId, comercio_id, coluna e versão (sem ciphertext/valor)`.
 
 **NÃO FAZER.** Conhecer o ERP de origem; calcular recorrência aqui; escrever no ERP; usar Redis; logar PII.
 
@@ -679,16 +733,16 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 ### REC-024 · 🆕 [STORY] · 🟠 HIGH · 3 SP · EP-05
 **Identidade do cliente: normalização E.164 e deduplicação**
 
-*Auditoria: C2. Antes embutido no REC-020; separado para respeitar a escala de SP.*
+*Revisão de decisões 2026-11-08: consome o `BlindIndex` do REC-016; continua em 3 SP. Auditoria: C2. Antes embutido no REC-020; separado para respeitar a escala de SP.*
 
 **Descrição.** O motor depende de o cliente ser **o mesmo** entre vendas e de o WhatsApp ser válido. No varejo pequeno, o mesmo cliente aparece com telefones em formatos diferentes ou em cadastros duplicados no ERP.
 
 **Instruções de desenvolvimento.**
 - Normalizar `telefone` para **E.164** (ex.: libphonenumber, região padrão BR). Telefone inválido ou ausente marca o cliente como **sem telefone válido** (não elegível a mensagem; continua no histórico).
-- ⚠️ **REGRA PROPOSTA, CONFIRMAR (risco conhecido):** **chave de deduplicação do cliente:** `(comercio_id, telefone_e164)`. Dois `erp_cliente_id` com o mesmo telefone normalizado apontam para **um só cliente** do core; os ids do ERP ficam registrados como referências (detalhar o modelo na `spec.md`). O histórico de compras é unificado.
-- Risco: telefone compartilhado (ex.: uma família usando o mesmo número) **funde históricos e distorce os ciclos** do cliente. Alternativa a avaliar com os dados do F3: não fundir e só sinalizar o conflito.
+- **Default decidido em 2026-11-08 (limitação conhecida):** **chave de deduplicação do cliente:** `(comercio_id, telefone_hash)` — o **índice cego (HMAC) do telefone E.164** (ADR-0004, Opção B), nunca o telefone em claro. Dois `erp_cliente_id` com o mesmo telefone normalizado apontam para **um só cliente** do core; os ids do ERP ficam registrados como referências (detalhar o modelo na `spec.md`). O histórico de compras é unificado.
+- **Limitação conhecida (documentada, aceita em 2026-11-08):** telefone compartilhado (ex.: uma família usando o mesmo número) **funde históricos e distorce os ciclos** do cliente. Não se resolve no MVP.
 - Migration `V0203__cliente_identidade.sql`.
-- Busca/unique por telefone segundo a ADR-0004 (índice cego se a coluna for cifrada).
+- Busca/unique por telefone pelo **índice cego `telefone_hash`** (ADR-0004, Opção B), calculado pelo `BlindIndex` do **REC-016** sobre o E.164 normalizado; só o hash e o valor cifrado são persistidos. **O normalizador E.164 deste card é o único do sistema**: o REC-035 e o REC-054 o reutilizam, junto com o mesmo `BlindIndex`.
 - Métricas: clientes deduplicados, telefones inválidos (por comércio).
 
 **Critérios de aceite.**
@@ -700,6 +754,8 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 - `Dado 2 cadastros do ERP com o mesmo telefone em formatos distintos / Quando consumidos / Então 1 cliente com histórico unificado`.
 - `Dado telefone inválido / Então cliente marcado sem telefone válido e inelegível para envio`.
 - `Dado o mesmo evento 2x / Então 1 cliente`.
+- `Dado telefones em formatos distintos do mesmo número / Então o mesmo telefone_hash`.
+- `Dado o mesmo telefone em 2 comércios / Então telefone_hash diferente e clientes independentes`.
 
 **NÃO FAZER.** Normalizar no driver (a normalização é do core, o driver só repassa o texto); mesclar clientes por nome; logar telefone em claro.
 
@@ -753,7 +809,7 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 **Instruções de desenvolvimento.**
 - **O `code` e o `state` do callback OAuth nunca aparecem em log** (mascaramento da query string, REC-005).
 - `POST /driver/v1/bling/conectar/{comercioId}` → URL de autorização (state assinado). `GET /driver/v1/bling/callback` → troca code por tokens.
-- Persistir access+refresh **cifrados por comércio** (Secrets Manager em prod; tabela cifrada em dev; alinhar com a ADR-0004). `BlingTokenService.getValidAccessToken(comercioId)` com refresh automático. `TokenRefreshJob` horário (`@Scheduled`).
+- Persistir access+refresh **cifrados por comércio** com o mesmo esquema da ADR-0004 (consequência derivada, não decisão do usuário: `PiiCipher` do REC-016, DEK do comércio em envelope sob a mestra; mestra em variável de ambiente no piloto e KMS/Secrets Manager no deploy definitivo, REC-074). **O driver tem o SEU envelope:** DEK por comércio guardada **no banco do driver**, cifrada pela mestra (migration própria do driver, com `comercio_id`, `dek_cifrada`, `versao`, `criado_em` e RLS/isolamento por comércio; a DEK é criada no primeiro `conectar/{comercioId}`; os jobs leem a DEK no contexto do tenant). Um **eventual descarte da chave de um comércio** (se o REC-072 escolher esse modo de exclusão) **precisa cobrir o core e o driver**. `BlingTokenService.getValidAccessToken(comercioId)` com refresh automático. `TokenRefreshJob` horário (`@Scheduled`).
 - Usar `ResilientErpClient` do `driver-sdk`. Emitir `driver.conexao.status`.
 - Testes com WireMock simulando o IdP do Bling.
 
@@ -781,7 +837,7 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 **Descrição.** Capturar vendas do Bling em tempo real e em lote, normalizar para canônico e publicar ao core. Usa a decisão/fixtures do REC-019.
 
 **Instruções de desenvolvimento.**
-- Webhook `POST /webhooks/bling` autenticado por **HMAC**; **dedup por `erp_venda_id` numa tabela do driver com `unique` no Postgres (sem Redis)**. Responde 202, processa assíncrono. Nunca loga o body do webhook (REC-005).
+- Webhook `POST /webhooks/bling` autenticado por **HMAC**; **dedup por `erp_venda_id` numa tabela do driver com `unique` no Postgres (sem Redis)**. Responde 202 **só depois de persistir a referência** (`erp_venda_id` + tipo) no outbox do driver (REC-043; peça do `driver-sdk`), e processa assíncrono. A reentrega busca o pedido de novo no Bling e respeita o rate limit. Nunca loga o body do webhook (REC-005).
 - No evento: `BlingClient.obterPedido` → mapear (MapStruct) payload Bling → `VendaCanonica` → publicar `venda.canonica.registrada` via `CanonicalPublisher` (transporte conforme REC-043). Pedido cancelado → `venda.canonica.cancelada`. O telefone é repassado **como veio** (normalização é do core).
 - Backfill histórico: **`@Scheduled` + cursor retomável persistido** (paginado, respeitando rate limit). Spring Batch só se o volume real do backfill exigir (decisão posterior, fora do MVP). Polling incremental (`BlingIncrementalSyncJob`, 5–15 min) como rede de segurança, por cursor `ultima_sincronizacao`.
 - Sync de produtos/estoque → `produto.canonico.upsert`/`estoque.canonico.atualizado`.
@@ -799,7 +855,8 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 - `Dado backfill interrompido / Quando reexecuta / Então retoma do cursor sem duplicar`.
 - `Dado o mesmo webhook 2x / Então 1 evento (dedup por unique)`.
 - `Dado pedido cancelado / Então publica venda.canonica.cancelada`.
-- Rate limit do Bling (429) respeitado no backfill.
+- Rate limit do Bling (429) respeitado no backfill e na reentrega do outbox.
+- `Dado SELECT na tabela do outbox do driver / Então não há PII (só erp_venda_id e tipo)`.
 
 **NÃO FAZER.** Vazar DTO do Bling para o core; processar síncrono no request do webhook; estourar rate limit; escrever no Bling; Redis; Spring Batch; logar body de webhook.
 
@@ -815,7 +872,7 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 **Descrição.** O ERP não guarda consentimento, e uma base importada do Bling começa com 0% de opt-in. Este card cria o modelo, a trilha e a política única que decide se se pode enviar.
 
 **Instruções de desenvolvimento.**
-- Migration `V0301__consentimento.sql`: `consentimento` (estado atual, **chave `(comercio_id, telefone_e164)`** — com **índice cego** se a ADR-0004 escolher a opção B ou C —, `cliente_id` **opcional** associado depois, `OPT_IN`/`OPT_OUT`, `origem`, `prova`, `atualizado_em`) e `consentimento_evento` (trilha **append-only**: telefone, tipo, origem, prova, timestamp). `comercio_id` + RLS. **Cliente sem linha de consentimento é `SEM_REGISTRO`.** O consentimento pode nascer **antes** de o cliente existir (opt-in pela landing, REC-054) e é associado ao `cliente_id` quando o cliente chegar do ERP.
+- Migration `V0301__consentimento.sql`: `consentimento` (estado atual, **chave `(comercio_id, telefone_hash)`**, em que `telefone_hash` é o índice cego HMAC por comércio do telefone E.164 — ADR-0004 Opção B, `BlindIndex` do REC-016 —, mais `telefone_cifrado` para uso na aplicação; **sem** `telefone_e164` em claro; `cliente_id` **opcional** associado depois, `OPT_IN`/`OPT_OUT`, `origem`, `prova`, `atualizado_em`) e `consentimento_evento` (trilha **append-only**: `telefone_hash` + `telefone_cifrado` (não o telefone em claro), tipo, origem, prova, timestamp; **a `prova`, se contiver PII, é cifrada**). `comercio_id` + RLS. **Cliente sem linha de consentimento é `SEM_REGISTRO`.** O consentimento pode nascer **antes** de o cliente existir (opt-in pela landing, REC-054) e é associado ao `cliente_id` quando o cliente chegar do ERP. O telefone é normalizado pelo **mesmo normalizador E.164** (REC-024) e indexado pelo **mesmo `BlindIndex`** (REC-016).
 - `origem` (valores a detalhar na spec): captação por link/QR na loja, captação no recibo, importação com prova de consentimento prévio, registro manual (OWNER/SUPER_ADMIN). A captação em si é o REC-054.
 - `ConsentPolicy.podeEnviar(cliente, tipo, agora)` — **classe única** no core: decide **somente** `OPT_IN` vigente + telefone válido (REC-024). **Não conhece a janela de 24h nem template × sessão**: isso é regra do adapter de WhatsApp (REC-051). Cliente `SEM_REGISTRO` **não** pode receber.
 - `POST/DELETE /api/v1/clientes/{id}/consentimento` (opt-in/opt-out com timestamp e origem). (Movido do REC-053.)
@@ -833,7 +890,7 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 - `Dado opt-out / Quando podeEnviar / Então false imediatamente e consentimento.revogado emitido`.
 - `Dado opt-out seguido de novo opt-in / Então podeEnviar true e a trilha tem os 3 eventos`.
 - `Dado opt-in de um telefone sem cliente / Quando o cliente chega do ERP com esse telefone / Então o consentimento é associado ao cliente_id e podeEnviar = true`.
-- `Dado o mesmo telefone em 2 comércios / Então consentimentos independentes`.
+- `Dado o mesmo telefone em 2 comércios / Então consentimentos independentes e telefone_hash diferente`.
 - `Dado cliente de outro comércio / Então não acessa (RLS)`.
 - Teste de arquitetura: só a `ConsentPolicy` decide envio.
 
@@ -991,7 +1048,7 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
   - `PENDENTE → ENVIADA | EXPIRADA | CANCELADA | FALHA` (`EXPIRADA` também por prazo, ver abaixo)
   - `ENVIADA → CONVERTIDA | DESCARTADA | FALHA`
   - `CONVERTIDA`, `DESCARTADA`, `EXPIRADA`, `CANCELADA`, `FALHA` são finais.
-- **Quando:** `EXPIRADA` = (a) o cliente recomprou o produto antes do envio (nova venda do mesmo cliente+produto com a ação PENDENTE) ou (b) ⚠️ **regra proposta, confirmar:** a ação `PENDENTE` passou de `proxima_prevista + tolerancia_atraso_dias` sem ser enviada (envio bloqueado por template pendente, teto atingido ou job parado). Um job (ou a própria varredura do gerador) expira essas ações; **nunca se envia reposição fora da janela**; `CANCELADA` = opt-out do cliente (consumer de `consentimento.revogado`, REC-035), venda cancelada que invalida o ciclo, ou produto marcado inelegível (REC-046); `FALHA` = envio rejeitado ou "não entregue por política" da Meta, **sem reenvio** (REC-053/056).
+- **Quando:** `EXPIRADA` = (a) o cliente recomprou o produto antes do envio (nova venda do mesmo cliente+produto com a ação PENDENTE) ou (b) **default decidido em 2026-11-08:** a ação `PENDENTE` passou de `proxima_prevista + tolerancia_atraso_dias` sem ser enviada (envio bloqueado por template pendente, teto atingido ou job parado). Um job (ou a própria varredura do gerador) expira essas ações; **nunca se envia reposição fora da janela**; `CANCELADA` = opt-out do cliente (consumer de `consentimento.revogado`, REC-035), venda cancelada que invalida o ciclo, ou produto marcado inelegível (REC-046); `FALHA` = envio rejeitado ou "não entregue por política" da Meta, **sem reenvio** (REC-053/056).
 - **Chave de janela:** `janela_ref` = data da `ultima_compra` do ciclo vigente (estável até uma nova compra). Unicidade ativa por `(cliente, produto, tipo, janela_ref)` entre ações em estado não final.
 
 **Critérios de aceite.** Transição inválida é rejeitada; unicidade impede ação ativa duplicada; opt-out cancela as ações PENDENTES do cliente; recompra antes do envio expira a ação.
@@ -1023,7 +1080,7 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 - Para cada `ciclo_recompra` **utilizável (≥3 compras)** de produto **elegível**, com `proxima_prevista − N ≤ hoje ≤ proxima_prevista + tolerancia_atraso_dias` (**"hoje" no fuso do comércio**), criar `acao_recomendada(REPOSICAO)` se não existir ativa para a chave de janela (REC-040). `N`, tolerância, corte de inativo e teto vêm da **config do comércio** (REC-013); a `RegraVertical` (REC-062) só estende.
 - **Atraso:** cliente atrasado ou job parado por dias continua elegível até `proxima_prevista + tolerancia_atraso_dias`; depois disso não gera ação.
 - **Inativo:** cliente sem compra há mais de `corte_inativo_ciclos × intervalo_medio_dias` **não gera ação** (reativação é Fase 2).
-- **Teto de frequência (⚠️ ESCOLHA MINHA, CONFIRMAR: a auditoria deixou "consolidar OU limitar"; adotei LIMITAR por ser a mais simples; consolidar ficou na Fase 2 sem decisão do usuário):** no máximo `max_acoes_cliente_semana` ações geradas por cliente por semana. Havendo vários produtos vencendo, **limita-se** pela ordem de vencimento (a mais próxima de `proxima_prevista` primeiro); as demais ficam para a próxima execução enquanto ainda estiverem na janela. *(Consolidar vários produtos numa só mensagem é uma alternativa, mas é Fase 2.)*
+- **Teto de frequência (default decidido em 2026-11-08: LIMITAR; consolidar fica na Fase 2):** no máximo `max_acoes_cliente_semana` ações geradas por cliente por semana. Havendo vários produtos vencendo, **limita-se** pela ordem de vencimento (a mais próxima de `proxima_prevista` primeiro); as demais ficam para a próxima execução enquanto ainda estiverem na janela. *(Consolidar vários produtos numa só mensagem é Fase 2.)*
 - Job diário (`@Scheduled`, por comércio, REC-011) + reação a `perfil.recalculado`. Dedup. **Opt-in checado na geração pela `ConsentPolicy` (REC-035)**, sem regra duplicada. Emitir `acao.gerada` (evento interno).
 
 **Critérios de aceite.**
@@ -1056,13 +1113,13 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 ### REC-042 · [STORY] · 🟠 HIGH · 8 SP · EP-01
 **Outbox pattern + publisher**
 
-*Auditoria: C4 (traceId no outbox), E3 (outbox vale para os dois transportes).*
+*Auditoria: C4 (traceId no outbox), E3.*
 
-**Descrição.** Entregar eventos sem *dual-write*. O outbox serve aos **eventos internos do core** (`venda.persistida`, `perfil.recalculado`, `acao.gerada`, `mensagem.status`...) e é necessário **qualquer que seja a decisão do REC-043**. A entrega driver→core **não depende dele** (REC-043, S2).
+**Descrição.** Entregar eventos sem *dual-write*. O outbox serve aos **eventos internos do core** (`venda.persistida`, `perfil.recalculado`, `acao.gerada`, `mensagem.status`...) e é necessário **independentemente do transporte driver→core**. A entrega driver→core **não depende dele** (REC-043, S2).
 
 **Instruções de desenvolvimento.**
 - Migration `V0502__outbox.sql` (com colunas `trace_id`/`traceparent`). `OutboxService.record(evento)` grava na **mesma transação** do domínio, com o `traceId` corrente. `OutboxPublisher` (poller no Postgres) publica e marca enviado, restaurando o `traceId` no consumo. Retrofit dos eventos internos já emitidos nos S2–S4 (ponte direta) para passarem pelo outbox.
-- O destino do publisher é o consumidor interno do core (e, se o REC-043 for a opção B, o broker).
+- O destino do publisher é o consumidor interno do core (sem broker no MVP, REC-043).
 
 **Critérios de aceite.**
 - Evento gravado no outbox na transação do domínio; publisher entrega e marca enviado.
@@ -1092,11 +1149,11 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 ### REC-050 · [STORY] · 🟠 HIGH · 5 SP · EP-07
 **MessagingPort (porta)**
 
-*Auditoria: I4b/I4c (decisão REC-015), C5 (um adapter só). Antes: "porta + comando `mensagem.enviar`" com dois adapters.*
+*Auditoria: I4b/I4c (REC-015, Opção A decidida em 2026-11-08), C5 (um adapter só). Antes: "porta + comando `mensagem.enviar`" com dois adapters.*
 
-**Instruções de desenvolvimento.** Interface `MessagingPort.enviar(MensagemCanonica)` no core; adapter resolvido por `messaging_provider` da config do comércio (no MVP, só `oficial`). Core só emite o pedido de envio; não conhece WhatsApp. Montagem conforme a decisão do **REC-015** (padrão: `wa-cloud` ligado em runtime ao `core-api`). Se o REC-015 escolher a Opção B, o envio passa a ser o comando `mensagem.enviar` no contrato.
+**Instruções de desenvolvimento.** Interface `MessagingPort.enviar(MensagemCanonica)` no core; adapter resolvido por `messaging_provider` da config do comércio (no MVP, só `oficial`). Core só emite o pedido de envio; não conhece WhatsApp. Montagem conforme o **REC-015 (Opção A, decidida em 2026-11-08)**: `wa-cloud` ligado ao `core-api` só em **`runtimeOnly`**, descoberto por configuração Spring; o `/webhooks/whatsapp` mora no `core-api`, no pacote do adapter, e entrega o status ao core por uma porta definida no core. O comando `mensagem.enviar` **não** entra no contrato.
 
-**Critérios de aceite.** Core compila e testa sem depender de nenhum adapter concreto (ArchUnit: o core não importa `com.recorra.messaging..`); adapter resolvido em runtime por config.
+**Critérios de aceite.** Core compila e testa sem depender de nenhum adapter concreto (`wa-cloud` só `runtimeOnly`; ArchUnit: o core não importa `com.recorra.messaging..`); adapter resolvido em runtime por config.
 
 **Cenários de teste.** `Dado comércio com provider=oficial / Quando o core envia / Então o adapter oficial é invocado` (adapter mockado); `Dado provider desconhecido / Então erro claro`; ArchUnit.
 
@@ -1114,10 +1171,10 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 **Descrição.** Cada comércio precisa de WABA, número, credenciais e um template de marketing aprovado pela Meta. Este card cria o cadastro e o ciclo de vida disso no core, para o envio ter o que usar. A aprovação em si é processo externo (frente F2).
 
 **Instruções de desenvolvimento.**
-- Migration `V0601__whatsapp.sql`: `whatsapp_conta` (por comércio: `waba_id`, `phone_number_id`, credencial/token **cifrado** conforme ADR-0004) e `whatsapp_template` (por comércio: nome, idioma, categoria, variáveis, `status` = `PENDENTE`/`APROVADO`/`REPROVADO`, motivo). `comercio_id` + RLS.
+- Migration `V0601__whatsapp.sql`: `whatsapp_conta` (por comércio: `waba_id`, `phone_number_id`, credencial/token **cifrado** conforme a ADR-0004, como consequência derivada: `PiiCipher` do REC-016 com a DEK do comércio) e `whatsapp_template` (por comércio: nome, idioma, categoria, variáveis, `status` = `PENDENTE`/`APROVADO`/`REPROVADO`, motivo). `comercio_id` + RLS.
 - `POST/PATCH /api/v1/comercios/{id}/whatsapp` (SUPER_ADMIN): registra credenciais e templates e atualiza o `status` (informado pelo operador, ou pelo webhook de status de template da Meta quando houver).
 - ⚠️ **DECISÃO PENDENTE DO USUÁRIO — como o comércio se conecta à Meta:** (padrão provisório, o mais simples) **cadastro manual** pelo operador `SUPER_ADMIN` com as credenciais do WABA do comércio × **Embedded Signup** da Meta (o comércio autoriza dentro do produto; mais automação, mais integração e exige ser Tech Provider/BSP). Este card implementa só o cadastro manual; o Embedded Signup seria um card novo.
-- **Template reprovado ou pendente:** o envio do comércio fica **bloqueado** e a ação **permanece `PENDENTE`, não vira `FALHA`** (⚠️ regra proposta, confirmar), com alerta/métrica, até haver template `APROVADO`. **A ação não fica PENDENTE para sempre:** passada a tolerância de atraso ela vira `EXPIRADA` (REC-040) e **não é enviada atrasada** quando o bloqueio cair. Não há reenvio nem resubmissão automática. O `SUPER_ADMIN` vê o motivo da reprovação.
+- **Template reprovado ou pendente:** o envio do comércio fica **bloqueado** e a ação **permanece `PENDENTE`, não vira `FALHA`** (**default decidido em 2026-11-08**: template pendente = `PENDENTE`), com alerta/métrica, até haver template `APROVADO`. **A ação não fica PENDENTE para sempre:** passada a tolerância de atraso ela vira `EXPIRADA` (REC-040) e **não é enviada atrasada** quando o bloqueio cair. Não há reenvio nem resubmissão automática. O `SUPER_ADMIN` vê o motivo da reprovação.
 - Nenhuma credencial em log nem em resposta de API (só mascarada).
 
 **Critérios de aceite.**
@@ -1164,8 +1221,8 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 
 **Instruções de desenvolvimento.**
 - Migration `V0602__orcamento_envio.sql` (contador mensal por comércio).
-- `teto_mensagens_mes` na config do comércio (REC-013). **Sem teto configurado, o envio fica bloqueado** (⚠️ regra proposta, confirmar).
-- Serviço `OrcamentoEnvio` (reserva/consulta do contador) **entregue neste card (S6)**; o consumer de envio (REC-053, S7) o consulta antes de enviar. No teto, a ação **permanece `PENDENTE`** (⚠️ regra proposta, confirmar: não vira `FALHA`) com alerta/métrica; reabre no mês seguinte ou ao subir o teto — **mas, passada a tolerância de atraso, a ação vira `EXPIRADA` (REC-040) e não é enviada atrasada.**
+- `teto_mensagens_mes` na config do comércio (REC-013). **Sem teto configurado, o envio fica bloqueado** (default decidido em 2026-11-08).
+- Serviço `OrcamentoEnvio` (reserva/consulta do contador) **entregue neste card (S6)**; o consumer de envio (REC-053, S7) o consulta antes de enviar. No teto, a ação **permanece `PENDENTE`** (default decidido em 2026-11-08: não vira `FALHA`) com alerta/métrica; reabre no mês seguinte ou ao subir o teto — **mas, passada a tolerância de atraso, a ação vira `EXPIRADA` (REC-040) e não é enviada atrasada.**
 - Contador mensal por comércio (fuso do comércio) e **métrica de custo por comércio** (`mensagens_enviadas`, `custo_estimado`), alimentada pelo custo registrado no REC-051.
 - **"Não entregue por política" da Meta = `FALHA`, sem reenvio** (REC-040/051/053). A métrica separa entregue, falha e falha por política.
 - ⚠️ **DECISÃO PENDENTE DO USUÁRIO (comercial):** quem paga a mensagem (a plataforma, o comércio, repasse). Este card só mede e limita; a política de cobrança não está no escopo.
@@ -1210,7 +1267,7 @@ Este card **não será implementado** no MVP nem entra na Fase 2 sem uma nova AD
 ### REC-053 · [STORY] · 🔴 CRITICAL · 5 SP · EP-07
 **Consumer de `acao.gerada` → envio + status**
 
-*Auditoria: C1 (usa a `ConsentPolicy`; opt-in/opt-out e a captação saíram deste card para REC-035 e REC-054), I6, I4b (local do webhook conforme REC-015).*
+*Auditoria: C1 (usa a `ConsentPolicy`; opt-in/opt-out e a captação saíram deste card para REC-035 e REC-054), I6, I4b (webhook no `core-api`, REC-015 Opção A decidida em 2026-11-08).*
 
 **Descrição.** Fecha o loop ação → mensagem respeitando LGPD (§1.6). Entra no S7 porque consome o teto (REC-056) e o onboarding (REC-055), entregues no S6.
 
@@ -1218,7 +1275,7 @@ Este card **não será implementado** no MVP nem entra na Fase 2 sem uma nova AD
 - Migration `V0701__mensagem.sql`: tabela `mensagem`. **Depende do REC-056 (`OrcamentoEnvio`) e do REC-055 (template/credencial), ambos do S6.**
 - Consumer de `acao.gerada`: monta mensagem (template+variáveis) → **`ConsentPolicy.podeEnviar`** (a mesma do REC-035) → **teto de envio (REC-056)** → envia via `MessagingPort` → persiste `mensagem` (ENVIADA) → ação `ENVIADA`. Idempotente; throttle por número.
 - Se a `ConsentPolicy` negar (ex.: opt-out depois da geração), a ação vai para `CANCELADA`, sem envio.
-- Webhook `POST /webhooks/whatsapp` (verificação da Meta + assinatura) → atualiza `mensagem` (entregue/lida/falha) → emite `mensagem.status` (evento interno). Status de falha ou "não entregue por política" → ação `FALHA`, **sem reenvio**. Nunca loga o body do webhook.
+- Webhook `POST /webhooks/whatsapp` **no `core-api`, no pacote do adapter** (REC-015, Opção A; verificação da Meta + assinatura) → atualiza `mensagem` (entregue/lida/falha) → emite `mensagem.status` (evento interno). Status de falha ou "não entregue por política" → ação `FALHA`, **sem reenvio**. Nunca loga o body do webhook.
 
 **Critérios de aceite.**
 - Cliente com opt-in → mensagem enviada/registrada; ação vira ENVIADA.
@@ -1249,7 +1306,7 @@ Este card **não será implementado** no MVP nem entra na Fase 2 sem uma nova AD
 
 **Instruções de desenvolvimento.**
 - Migration `V0702__optin_landing.sql` (token/identificador do link por comércio; o consentimento usa o `V0301`).
-- **Landing de opt-in:** página pública mínima (HTML servido pelo próprio `core-api`, sem React), acessada por **link/QR** único por comércio. Pede nome (opcional), WhatsApp e o **aceite explícito** do envio de mensagens; mostra o nome do comércio (controlador) e como cancelar. Registra no REC-035 com `origem` e timestamp. Número normalizado (REC-024). Se o telefone ainda não corresponde a um cliente do ERP, o consentimento fica **vinculado ao telefone** e é associado ao cliente quando ele chegar do ERP (modelo na `spec.md`).
+- **Landing de opt-in:** página pública mínima (HTML servido pelo próprio `core-api`, sem React), acessada por **link/QR** único por comércio. Pede nome (opcional), WhatsApp e o **aceite explícito** do envio de mensagens; mostra o nome do comércio (controlador) e como cancelar. Registra no REC-035 com `origem` e timestamp. Número normalizado pelo **mesmo normalizador E.164 do REC-024** e indexado pelo **mesmo `BlindIndex`** (REC-016): a landing e a importação (CSV) não têm normalização nem hash próprios. Se o telefone ainda não corresponde a um cliente do ERP, o consentimento fica **vinculado ao telefone** e é associado ao cliente quando ele chegar do ERP (modelo na `spec.md`).
 - **Importação com prova de consentimento prévio:** `POST /api/v1/consentimentos/importacao` (OWNER; CSV) com telefone, origem e **referência/data da prova** do consentimento já obtido. **Linha sem prova é rejeitada.** Relatório de aceitas/rejeitadas.
 - **Opt-out:** a landing e uma resposta de opt-out (processada via `POST/DELETE` do REC-035) revogam; o efeito sobre as ações PENDENTES está no REC-040.
 - **IP e telefone nos logs (obrigatório, REC-005):** o rate limit usa IP, que é dado pessoal. Os logs de rate limit e de rejeição **não gravam o IP completo** (truncado, ex.: /24, ou hash com sal) **nem o telefone** (mascarado). Nenhum body da landing em log.
@@ -1304,8 +1361,8 @@ Este card **não será implementado** no MVP nem entra na Fase 2 sem uma nova AD
 **Instruções de desenvolvimento.**
 - Migration `V0703__conversao.sql` (venda atribuída, origem, valor).
 - Consumer de `venda.persistida`: para cada item da venda, se existe ação `ENVIADA` do **mesmo cliente + mesmo produto** e a data da venda está **depois do envio** e em até `janela_atribuicao_dias` (X, config do comércio, REC-013) → ação `CONVERTIDA` (`origem=AUTOMATICA`), registrando a venda atribuída e o valor.
-- ⚠️ **X (`janela_atribuicao_dias`) tem default proposto 7 e precisa de confirmação do usuário.**
-- Idempotente (reprocessar a venda não duplica); havendo mais de uma ação ENVIADA para o par, atribui à **mais recente** (⚠️ **regra proposta, confirmar**: desempate escolhido por mim). Venda **anterior** ao envio não atribui; venda **fora** da janela não atribui; venda cancelada não atribui (já excluída do histórico, REC-020). ⚠️ **Escolha minha, confirmar:** reverter conversão por cancelamento posterior fica **fora do MVP** (limitação documentada).
+- **X (`janela_atribuicao_dias`): default 7, decidido em 2026-11-08** (configurável por comércio).
+- Idempotente (reprocessar a venda não duplica); havendo mais de uma ação ENVIADA para o par, atribui à **mais recente** (default decidido em 2026-11-08). Venda **anterior** ao envio não atribui; venda **fora** da janela não atribui; venda cancelada não atribui (já excluída do histórico, REC-020). **Default decidido em 2026-11-08:** reverter conversão por cancelamento posterior fica **fora do MVP** (limitação documentada).
 - Métricas: `conversoes`, `taxa_de_conversao` (CONVERTIDAS ÷ ENVIADAS), `receita_atribuida`, por comércio e período; consumidas pelo dashboard/resumo (REC-060/064).
 
 **Critérios de aceite.**
@@ -1337,7 +1394,7 @@ Este card **não será implementado** no MVP nem entra na Fase 2 sem uma nova AD
 **Endpoints de dashboard (agregações)**
 
 **Instruções de desenvolvimento.**
-- `GET /api/v1/dashboard/resumo` (novos clientes/dia, ticket médio, vendas, **ações enviadas, conversões, taxa de conversão, receita atribuída, custo de mensagens, base com opt-in, vendas sem cliente**), `/recorrencia` (previsão de reposição), `/top-clientes` (valor e recorrência), `/oportunidades` (fila do dia), `/previsao-faturamento`, `/produtos` (mais vendidos × cliente × ciclo).
+- `GET /api/v1/dashboard/resumo` (novos clientes/dia, ticket médio, vendas, **ações enviadas, conversões, taxa de conversão, receita atribuída, custo de mensagens, base com opt-in, vendas sem cliente**), `/recorrencia` (previsão de reposição), `/top-clientes` (valor e recorrência; **decifra só o nome da página retornada**, sem filtro nem ordenação por nome no banco, ADR-0004), `/oportunidades` (fila do dia), `/previsao-faturamento`, `/produtos` (mais vendidos × cliente × ciclo).
 - Agregar no banco (queries/`views materializadas`); usar réplica de leitura quando existir.
 
 **Critérios de aceite.** Métricas escopadas ao comércio; período parametrizável; sem varredura em memória por request; métricas de conversão/custo vêm dos REC-063/056.
@@ -1380,7 +1437,7 @@ Este card **não será implementado** no MVP nem entra na Fase 2 sem uma nova AD
 ### REC-061 · [STORY] · 🔵 MEDIUM · 5 SP · EP-08
 **Higienização de base (DataQualityJob + fila de incompletos)**
 
-**Instruções de desenvolvimento.** `DataQualityJob` semanal (`@Scheduled`, por comércio) marca `qualidade_cadastro`; `GET /api/v1/clientes/incompletos`; emite evento de solicitação de enriquecimento (a coleta via WhatsApp é Fase 2 — só emitir o evento).
+**Instruções de desenvolvimento.** `DataQualityJob` semanal (`@Scheduled`, por comércio) usa a coluna `qualidade_cadastro` **calculada na ingestão (REC-020)**, nunca SQL sobre o nome (cifrado, ADR-0004); marca/lista a partir dela; `GET /api/v1/clientes/incompletos`; emite evento de solicitação de enriquecimento (a coleta via WhatsApp é Fase 2 — só emitir o evento).
 
 **Critérios de aceite.** Clientes só com primeiro nome marcados como mínimo e listados em `/incompletos`.
 
@@ -1422,7 +1479,7 @@ Este card **não será implementado** no MVP nem entra na Fase 2 sem uma nova AD
 
 *Auditoria: D5 (o gate JaCoCo ≥80% já roda no `check` desde o S0; aqui só se verifica), E2 (sem Redis), E3.*
 
-**Instruções de desenvolvimento.** Cenário e2e: webhook Bling (WireMock) → driver → canônico → core → recorrência → ação (com opt-in) → WhatsApp (WireMock) → status → venda posterior → conversão automática. Testcontainers (Postgres e, se a decisão do REC-043 for B, RabbitMQ). **Sem Redis.** Variante e2e com o driver-stub. **Verificar** (não ativar) que o gate de cobertura do `check` está ativo no CI.
+**Instruções de desenvolvimento.** Cenário e2e: webhook Bling (WireMock) → driver → canônico → core → recorrência → ação (com opt-in) → WhatsApp (WireMock) → status → venda posterior → conversão automática. Testcontainers (Postgres). **Sem Redis.** Variante e2e com o driver-stub. **Verificar** (não ativar) que o gate de cobertura do `check` está ativo no CI.
 
 **Critérios de aceite.** Fluxo e2e verde no pipeline; o gate de cobertura falha o build abaixo de 80%.
 
@@ -1437,7 +1494,7 @@ Este card **não será implementado** no MVP nem entra na Fase 2 sem uma nova AD
 ### REC-071 · [STORY] · 🔵 MEDIUM · 3 SP · EP-09
 **Resiliência e reprocessamento**
 
-**Instruções de desenvolvimento.** Revisar retries/CB de ERP/WhatsApp; reprocessamento de falhas (DLQ na opção B do REC-043, ou tabela de falhas/reentrega na A); alarmes de lag de sync/fila; testes de falha injetada.
+**Instruções de desenvolvimento.** Revisar retries/CB de ERP/WhatsApp; reprocessamento de falhas (tabela de falhas de ingestão/reentrega, REC-043); alarmes de lag de sync e de backlog de reentrega/outbox; testes de falha injetada.
 
 **Critérios de aceite.** Falhas transitórias não derrubam o fluxo; itens com falha definitiva ficam recuperáveis e reprocessam.
 
@@ -1454,7 +1511,7 @@ Este card **não será implementado** no MVP nem entra na Fase 2 sem uma nova AD
 
 *Auditoria: C4 (mascaramento já existe desde o REC-005; este card o **verifica**), I5 (criptografia decidida na ADR-0004 e implementada nos cards de schema; aqui só retenção/exclusão).*
 
-**Instruções de desenvolvimento.** **Verificar** (teste ponta a ponta de appender) que PII e tokens não aparecem em claro em nenhum log do fluxo e2e; **verificar** a PII em repouso conforme a opção da ADR-0004; opt-out efetivo imediato e trilha de consentimento (REC-035); **política de retenção** e rotina/endpoint de **exclusão a pedido** (prazo e modo — anonimização × remoção — definidos na ADR-0004); minimização (MVP só nome+WhatsApp+CPF opcional).
+**Instruções de desenvolvimento.** **Verificar** (teste ponta a ponta de appender) que PII e tokens não aparecem em claro em nenhum log do fluxo e2e; **verificar** a PII em repouso conforme a ADR-0004 (Opção B, Aceita em 2026-11-08: colunas `*_cifrado` + `telefone_hash`, chave por comércio); opt-out efetivo imediato e trilha de consentimento (REC-035); **política de retenção** e **modo de exclusão** (de comércio e de cliente) — **pendentes, decididos aqui no S9** (o usuário decidiu não fixá-los antes; a ADR-0004 só registra que a chave por comércio *permite* excluir os dados de um comércio descartando a chave, com a ressalva sobre backups); rotina/endpoint de **exclusão a pedido** conforme essa decisão; minimização (MVP só nome+WhatsApp+CPF opcional).
 
 **Critérios de aceite.** Pedido de exclusão remove/anonimiza PII e cessa envios futuros; nenhuma PII em log no e2e.
 
@@ -1472,7 +1529,7 @@ Este card **não será implementado** no MVP nem entra na Fase 2 sem uma nova AD
 *Auditoria: E1. Antes: 8 SP com EKS, ArgoCD, Terraform, Amazon MQ e ElastiCache para 1 comércio-piloto. Agora: 5 SP, deploy simples. Kubernetes vira Fase 2.*
 
 **Instruções de desenvolvimento.**
-- Deploy simples: **1 VM, ECS ou PaaS** + **Postgres gerenciado**, imagens do `core-api` e do `driver-bling` (e RabbitMQ gerenciado/container **só se** o REC-043 escolher a opção B). **Sem Redis.** Segredos em Secrets Manager ou equivalente da plataforma. Pipeline de deploy manual ou simples (CI → imagem → deploy).
+- Deploy simples: **1 VM, ECS ou PaaS** + **Postgres gerenciado**, imagens do `core-api` e do `driver-bling`. **Sem broker** (REC-043: HTTP + outbox) e **sem Redis.** A **chave mestra de PII** (ADR-0004) sai da variável de ambiente do piloto para **KMS/Secrets Manager** (ou equivalente da plataforma), assim como o **segredo HMAC por driver** (REC-043); as **DEKs ficam fora dos backups do banco** (ADR-0004). Segredos em Secrets Manager ou equivalente da plataforma. Pipeline de deploy manual ou simples (CI → imagem → deploy).
 - ⚠️ **DECISÃO PENDENTE DO USUÁRIO — plataforma:** VM, ECS ou PaaS. **Padrão provisório (mais simples):** 1 VM com Docker Compose + Postgres gerenciado. Decidir também o IdP (REC-012) antes do deploy.
 - **Provedor de e-mail (item de infra):** o resumo semanal do REC-064 (opção B) exige um provedor de e-mail transacional (SES, SMTP ou equivalente da plataforma): remetente/domínio verificado (SPF/DKIM), credenciais em segredo, limite de envio e teste de entrega. Entra no deploy e no runbook (⚠️ a escolha do provedor é do usuário; sem a opção B esse item cai).
 - Feature flags por comércio (coluna na config do comércio, REC-013); runbook (onboarding do comércio, configuração do provedor de e-mail, conexão do Bling, onboarding WhatsApp, rollback, monitoramento, backup/restore do Postgres).
@@ -1514,10 +1571,10 @@ Cada item vira um épico próprio com o mesmo nível de detalhe quando priorizad
 ## Apêndice — Resumo de dependências e SP
 
 ```
-S0 (25) → S1 (24) → S2 (24) → S3 (21) → S4 (22) → S5 (21) → S6 (23) → S7 (21) → S8 (21) → S9 (19)   = 221 SP (MVP)
+S0 (25) → S1 (28) → S2 (26) → S3 (21) → S4 (22) → S5 (21) → S6 (23) → S7 (21) → S8 (21) → S9 (19)   = 227 SP (MVP)
 ```
 
-Se o REC-064 for a UI React (opção A): **226 SP**. O REC-043 conta 3 SP em qualquer das opções.
+Se o REC-064 for a UI React (opção A): **232 SP**. O REC-043 conta 5 SP. *(Em 2026-11-08: +5 SP do REC-016 no S1, +2 SP do REC-043 no S2 e −1 SP do REC-015, concluído e fora da conta; S1 = 28 e S2 = 26, aceitos pelo usuário sem mover cards.)*
 
 **Dependências entre cards (setas = "precisa de"):**
 
@@ -1527,14 +1584,14 @@ REC-002 → REC-010 → REC-020, REC-023
 REC-003 → REC-011 (RLS, Testcontainers)
 REC-005 → todo card com log/PII (REC-020 em diante)
 REC-011, REC-012 → REC-013 → (config lida por) REC-041, REC-056, REC-062, REC-063
-REC-014 (ADR-0004 Aceita) → REC-020, REC-024, REC-055
-REC-015 (decisão de montagem) → REC-010 (comando), REC-050, REC-053
+REC-014 (ADR-0004 Aceita, Opção B) → REC-016 (PiiCipher/BlindIndex) → REC-020, REC-024, REC-035, REC-054, REC-021, REC-055, REC-072
+REC-015 (concluído; Opção A) → REC-010 (sem comando), REC-050, REC-053
 REC-019 (+ F1) → REC-021, REC-022
 REC-020 → REC-024, REC-023 (stub publica; core consome), REC-031
 REC-035 (ConsentPolicy) → REC-041, REC-053, REC-054;  REC-035 → REC-040 (consentimento.revogado)
 REC-031 + REC-030 + REC-046 → REC-041 → REC-053
 REC-040 → REC-041, REC-053, REC-063
-REC-013 → REC-043 (transporte driver→core, S2, bloqueia o S2) → REC-020 (porta de entrada), REC-023, REC-022
+REC-013 → REC-043 (HTTP de ingestão + outbox, decidido; S2) → REC-020 (porta de entrada), REC-023, REC-022
 REC-042 (outbox, S5, só eventos internos) → retrofit dos eventos de S2–S4; REC-041, REC-053 (acao.gerada)
 REC-050 → REC-055 (+ F2) → REC-051 (S6, nesta ordem) → REC-053 (S7)
 REC-056 (S6, OrcamentoEnvio) → REC-053 (S7, consulta o teto antes de enviar)

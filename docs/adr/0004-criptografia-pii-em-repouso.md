@@ -1,12 +1,12 @@
 # ADR-0004: Criptografia de PII em repouso e papéis LGPD
 
-**Status:** Proposta — ⚠️ DECISÃO PENDENTE DO USUÁRIO
+**Status:** Aceita (Opção B, decidida em 2026-11-08)
 **Data:** 2026-11-08
-**Decisores:** Luiz Henrique (dev/arquiteto) — a decidir
+**Decisores:** Luiz Henrique (dev/arquiteto)
 **Origem:** auditoria de 2026-11-08, achado I5
-**Afeta:** REC-014 (decisão), REC-020 (schema de `cliente`), REC-021 (tokens de ERP), REC-055 (credenciais da Meta), REC-072 (LGPD)
+**Afeta:** REC-014 (decisão), REC-016 (componente de criptografia), REC-020 (schema de `cliente`), REC-021 (tokens de ERP), REC-024 (dedup), REC-035 (consentimento), REC-054 (captação de opt-in), REC-055 (credenciais da Meta), REC-072 (LGPD), REC-074 (KMS/Secrets Manager)
 
-> Esta ADR registra as opções e **não decide**. O REC-020 não começa até ela virar "Aceita", porque a escolha muda o schema de `cliente` (S2).
+> **Decisão (2026-11-08): Opção B.** A ADR está "Aceita", o que destrava o REC-020. As Opções A e C ficam registradas como alternativas descartadas. Continuam pendentes o termo/DPA com o comércio e a política de retenção (ver Itens de ação).
 
 ---
 
@@ -40,7 +40,7 @@ Pontos que a decisão precisa respeitar:
 **Prós:** nenhum impacto no schema nem nas queries; zero código. Postgres gerenciado já oferece.
 **Contras:** o conteúdo da tabela fica em claro para quem consegue ler o banco; pode ser insuficiente para a expectativa de "PII cifrada em repouso" do REC-072.
 
-### Opção B: criptografia por coluna na aplicação (AES-GCM, chave por comércio ou global) + índice cego (HMAC) para busca por telefone
+### Opção B (ESCOLHIDA): criptografia por coluna na aplicação (AES-GCM, chave por comércio ou global) + índice cego (HMAC) para busca por telefone
 
 | Dimensão | Avaliação |
 |---|---|
@@ -61,20 +61,45 @@ Pontos que a decisão precisa respeitar:
 **Prós:** sem código de aplicação para cifrar.
 **Contras:** a chave trafega nas queries (aparece em log de statement e no `pg_stat_statements` se mal configurado); mesma dependência de índice cego para busca; acopla ao Postgres.
 
-## Pontos que o usuário precisa decidir
+## Decisão
 
-1. Qual opção (A, B ou C), e em quais colunas: só `telefone`/`cpf`/`email`, ou também `nome`?
-2. Se B ou C: chave global ou por comércio? Onde mora a chave (Secrets Manager, KMS, variável de ambiente no piloto)?
-3. Como o telefone é buscado e deduplicado (índice cego, ou telefone em claro e só CPF/e-mail cifrados)?
-4. Papel LGPD e **termo/DPA** com o comércio: quem redige e revisa (jurídico), e em que data fica pronto. É pré-requisito do piloto e não é código.
-5. Retenção e exclusão (REC-072, S9): prazo de retenção e se a exclusão é anonimização ou remoção.
+**Opção B — criptografia por coluna na aplicação (AES-GCM) + índice cego (HMAC) no telefone**, decidida pelo usuário em 2026-11-08:
 
-## Consequências (a preencher quando decidida)
+1. **Colunas cifradas:** telefone, CPF, e-mail e **nome**.
+2. **Índice cego (HMAC)** no telefone, para busca e deduplicação (REC-024); é também a chave do consentimento (REC-035: `comercio_id` + hash do telefone).
+3. **Chave por comércio**, sob uma **chave mestra**. No piloto a mestra fica em **variável de ambiente**; no deploy definitivo, em **KMS/Secrets Manager** (REC-074).
+4. A chave por comércio **permite** excluir os dados de um comércio descartando a chave. **O modo de exclusão (de comércio e de cliente) e a retenção NÃO são decididos aqui: ficam para o REC-072 (S9).**
+5. As Opções A (volume/banco) e C (`pgcrypto`) ficam descartadas.
 
-- Pendente.
+## Esquema técnico (parâmetros mínimos; derivados da decisão, para o REC-016/REC-020)
+
+> Estes parâmetros detalham a Opção B para que o schema do REC-020 nasça correto. Não são decisões novas do usuário.
+
+- **Envelope:** a chave por comércio é uma **DEK aleatória** (não derivada de forma determinística da mestra), gerada na criação do comércio e guardada **cifrada pela mestra**. Uma chave derivada de mestra + `comercio_id` poderia ser derivada de novo e não haveria o que descartar; com a DEK, descartar = apagar a DEK. (Alternativa equivalente: sal aleatório por comércio na derivação.)
+- **Chaves separadas para AEAD e para MAC:** dois keysets Tink por comércio (AEAD e MAC), ambos cifrados pela mestra. Nunca a mesma chave para cifrar e para indexar.
+- **Nonce** aleatório de 96 bits por operação de cifra, sem reuso.
+- **AAD** (dados autenticados adicionais) com `comercio_id` + nome da coluna.
+- **Versão da chave** no ciphertext (prefixo) ou em coluna `chave_versao`.
+- **Rotação do HMAC:** recalcular `telefone_hash` em `cliente` **e** em `consentimento` (e na trilha) **no mesmo job**, com o `unique` ativo. O job fica fora do REC-016 (só desenho na `spec.md`); a versão no ciphertext permite a rotação futura.
+- **Implementação:** Google Tink (AEAD + keyset em envelope) no REC-016, em vez de AES-GCM/HKDF montados à mão; o esquema acima é o contrato, o Tink é o meio.
+
+## Consequências
+
+- **Schema (REC-020):** colunas `nome_cifrado`, `telefone_cifrado`, `cpf_cifrado`, `email_cifrado`, `telefone_hash` e a versão da chave; a unicidade por telefone vira `unique (comercio_id, telefone_hash)`.
+- **Dedup (REC-024):** pelo índice cego do telefone E.164. O risco do telefone compartilhado (funde históricos) fica documentado como **limitação conhecida**.
+- **Consentimento (REC-035):** chave `(comercio_id, telefone_hash)`; a landing e a importação (REC-054) usam o mesmo normalizador E.164 e o mesmo `BlindIndex`.
+- **Custo:** gestão de chaves e rotação (re-cifra); relatórios, listagens e dashboards decifram na aplicação (só a página retornada); busca só por igualdade de telefone; sem filtro, ordenação ou SQL sobre nome, CPF ou e-mail.
+- **Limitação do descarte:** com a DEK cifrada no próprio Postgres e a mestra ainda viva, um backup do banco segue legível até expirar. Para o descarte valer também sobre backups, as DEKs devem ficar **fora dos backups do banco** (KMS, REC-074).
+- **Risco aceito no piloto:** a mestra em variável de ambiente é mais fraca que KMS; vale só até o deploy definitivo.
+- **Consequências derivadas (não são decisões do usuário):**
+  - o mesmo esquema de cifra por comércio é usado nos **tokens do ERP** (REC-021) e nas **credenciais da Meta** (REC-055);
+  - o **HMAC é por comércio** (keyset MAC do comércio, no envelope sob a mestra): um HMAC global permitiria correlacionar telefones entre comércios e anularia o descarte da chave.
+- **Segue valendo:** RLS por `comercio_id` (REC-011) como barreira de isolamento; PII nunca em log (REC-005), incluindo a mestra, as DEKs e os keysets AEAD/MAC.
 
 ## Itens de ação
 
-1. [ ] Usuário escolhe a opção e atualiza o Status para "Aceita" (REC-014).
-2. [ ] Refletir a decisão no REC-020 (schema de `cliente`) e no REC-024 (deduplicação por telefone).
-3. [ ] Redigir o termo/DPA com o comércio (frente externa).
+1. [x] Usuário escolhe a opção e atualiza o Status para "Aceita" (REC-014) — feito em 2026-11-08.
+2. [x] Refletir a decisão no REC-016 (componente), REC-020 (schema de `cliente`), REC-024 (dedup), REC-035, REC-054, REC-021/REC-055 e REC-072 — registrado no roadmap em 2026-11-08.
+3. [ ] Redigir o termo/DPA com o comércio (frente externa F4) — **pendente**.
+4. [ ] Política de retenção e **modo de exclusão (de comércio e de cliente)** (REC-072, S9) — **pendente, por decisão do usuário de não fixar agora**.
+5. [ ] Chave mestra em KMS/Secrets Manager (REC-074).

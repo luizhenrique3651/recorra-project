@@ -54,3 +54,7 @@ Começar um projeto greenfield numa linha sem patches de segurança contraria a 
 1. [x] REC-001 montado com Boot 4.1.1, springdoc 3.1.0 e Gradle 9.2.1.
 2. [ ] Bump para Boot 4.2.x quando sair o GA (só alterar `spring-boot` no version catalog).
 3. [x] Atualizar a stack no `CONTEXTO-PROJETO.md` §3.
+
+## Notas de alteração
+
+- 2026-11-08 — o transporte do MVP passou a ser HTTP de ingestão + outbox (REC-043); a linha RabbitMQ da tabela acima fica como contexto da época (referência futura, não usada no MVP). A decisão desta ADR não muda.

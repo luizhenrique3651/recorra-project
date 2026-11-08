@@ -35,9 +35,9 @@ O diferencial não é cadastro nem cashback (commodities), é a **recompra antec
 - **Multi-tenant** por comércio (`comercio_id` + Row-Level Security no Postgres). Hierarquia `conta → comércio(unidade)`.
 - **WhatsApp é uma porta** (`MessagingPort`). No MVP existe **um único adapter: a API oficial da Meta (Cloud API, ~R$0,37/msg de marketing)**. O adapter de terceiro/não oficial foi cortado do MVP por risco de produto e jurídico (**ADR-0003**). A porta permanece para outro provedor oficial no futuro.
 - **Vertical-agnóstico:** regras de cada vertical entram como **configuração** (`RegraVertical`), não código.
-- **Assíncrono por eventos**, idempotência por `erp_venda_id`. Transporte driver→core: ⚠️ **decisão pendente (REC-043)**: RabbitMQ (Kafka só na escala) ou HTTP de ingestão idempotente + outbox/poller no Postgres para eventos internos.
+- **Assíncrono por eventos**, idempotência por `erp_venda_id`. Transporte driver→core: **HTTP de ingestão idempotente + outbox/poller no Postgres** para eventos internos (REC-043, decidido em 2026-11-08; sem broker no MVP, RabbitMQ/Kafka só como alternativa futura na escala).
 
-**Stack:** Java 21, **Spring Boot 4.1** (ADR-0002; subir para 4.2 quando sair o GA, previsto para nov/2026), Gradle 9, PostgreSQL 16 (RLS), Flyway, WebClient + Resilience4j, `@Scheduled` + cursor para os jobs, Testcontainers/WireMock, ArchUnit, GitHub Actions, Micrometer/OTel. RabbitMQ: ⚠️ pendente (REC-043). Frontend do dashboard: ⚠️ pendente (React mínimo × resumo semanal, REC-064).
+**Stack:** Java 21, **Spring Boot 4.1** (ADR-0002; subir para 4.2 quando sair o GA, previsto para nov/2026), Gradle 9, PostgreSQL 16 (RLS), Flyway, WebClient + Resilience4j, `@Scheduled` + cursor para os jobs, Testcontainers/WireMock, ArchUnit, GitHub Actions, Micrometer/OTel. Sem broker no MVP (REC-043). Frontend do dashboard: ⚠️ pendente (React mínimo × resumo semanal, REC-064).
 
 **Fora do MVP (Fase 2):** Redis (dedup passa a ser tabela com `unique` no Postgres), Spring Batch (só se um backfill pedir), Kubernetes/EKS/ArgoCD/Terraform/Amazon MQ/ElastiCache (o piloto roda em deploy simples: 1 VM, ECS ou PaaS, com Postgres gerenciado), papéis `MANAGER`/`SELLER` (o MVP tem `SUPER_ADMIN` + `OWNER`).
 
@@ -59,17 +59,21 @@ O diferencial não é cadastro nem cashback (commodities), é a **recompra antec
 
 1. ~~**Formato do contrato**~~ — **fechada pela ADR-0001** (Aceita): JSON Schema como fonte única, Java gerado por `jsonschema2pojo`.
 3. ~~**Adapter de WhatsApp padrão**~~ — **fechada pela ADR-0003** (Aceita): **só a Meta Cloud API oficial no MVP**; o adapter de terceiro foi cortado (auditoria C5). O onboarding da Meta (Business verification, WABA, número, template aprovado por comércio) é caminho crítico do piloto e deve começar já (ver "Frentes externas" no roadmap).
+11. ~~**Criptografia de PII em repouso**~~ — **fechada em 2026-11-08 (ADR-0004, Aceita):** Opção B, criptografia por coluna na aplicação (AES-GCM) em telefone, CPF, e-mail e nome; índice cego (HMAC) no telefone; chave por comércio sob uma mestra (variável de ambiente no piloto, KMS/Secrets Manager no REC-074), o que **permite** excluir os dados de um comércio descartando a chave. Seguem pendentes: DPA com o comércio (F4) e **modo de exclusão e retenção (REC-072, S9; o usuário decidiu não fixar agora)**. Componente: REC-016.
+12. ~~**Montagem do envio de WhatsApp (REC-015)**~~ — **fechada em 2026-11-08:** `MessagingPort` in-process; `wa-cloud` só `runtimeOnly` no `core-api` (ArchUnit); webhook no `core-api`; `mensagem.enviar` fora do contrato.
+13. ~~**Transporte driver→core (REC-043)**~~ — **fechada em 2026-11-08:** HTTP de ingestão idempotente + outbox; RabbitMQ fica só como alternativa futura/registro histórico.
+14. ~~**Defaults de negócio**~~ — **fechados em 2026-11-08** (configuráveis por comércio): N=5; tolerância de atraso=N; inativo após 2 ciclos; 1 ação/cliente/semana (limitar; consolidar é Fase 2); janela de atribuição 7 dias; dedup pelo telefone via índice cego (telefone compartilhado = limitação conhecida); PENDENTE além de `proxima_prevista`+tolerância → EXPIRADA; sem teto configurado = envio bloqueado; template pendente = PENDENTE; desempate "mais recente" e sem reversão de conversão. **Exceção: o fuso segue pendente** (ver item 15 em "Em aberto").
 
 **Em aberto (decisão do usuário)**
+
+15. **Fuso horário do comércio** — provisório `America/Sao_Paulo`; **a definir com o piloto (F5)** (pode ser `America/Manaus`, UTC−4). Config `fuso_horario`, REC-013.
 
 2. **Estratégia de captura do Bling:** o portal público da API é insuficiente → **contatar o suporte do Bling** para confirmar webhooks de venda, rate limits e escopos. É o que destrava o driver-bling. **Abrir esta frente agora, fora do board** (não esperar o Sprint 1).
 4. **IdP:** Keycloak (self-host) vs Cognito. *(a fixar; REC-012)*
 5. **Nome/marca do produto:** hoje "Recorra" é só codinome nos pacotes.
 6. **Vertical, ERP de praia (beachhead) e comerciante-piloto** para o go-to-market. Depende da análise do export real do Bling (taxa de vendas com cliente e telefone, clientes com ≥3 compras do mesmo SKU).
 7. **Estratégia de captação de opt-in** na loja (QR, link no recibo, importação com prova de consentimento) e o **papel LGPD/DPA** com o comércio (REC-054, ADR-0004).
-8. **Transporte driver→core:** RabbitMQ × HTTP de ingestão + outbox (REC-043).
 9. **Visibilidade para o dono no piloto:** UI React mínima × resumo semanal (REC-064).
-10. **Criptografia de PII em repouso** (ADR-0004, Proposta; REC-014).
 
 ---
 
@@ -85,11 +89,11 @@ O diferencial não é cadastro nem cashback (commodities), é a **recompra antec
 
 ## 7. Roadmap do MVP (resumo)
 
-10 sprints de 2 semanas (S0–S9), regime parcial (~20–24 SP/sprint), **~221 SP · ~5 meses**. O plano original tinha 8 sprints e ~176 SP no cabeçalho (os cards somavam 190); a auditoria acrescentou cards que faltavam (consentimento, captação de opt-in, onboarding da Meta, driver-stub, logging/PII, atribuição, resumo/UI, teto de envio) e cortou excesso (wa-terceiro, EKS, Redis etc.). Detalhe e mapa de numeração no roadmap (§2).
+10 sprints de 2 semanas (S0–S9), regime parcial (~20–24 SP/sprint), **~227 SP · ~5 meses** (S1 = 28 e S2 = 26, acima da faixa de ~24, aceitos sem mover cards). O plano original tinha 8 sprints e ~176 SP no cabeçalho (os cards somavam 190); a auditoria acrescentou cards que faltavam (consentimento, captação de opt-in, onboarding da Meta, driver-stub, logging/PII, atribuição, resumo/UI, teto de envio) e cortou excesso (wa-terceiro, EKS, Redis etc.). Detalhe e mapa de numeração no roadmap (§2).
 
 - **S0** Fundação do monorepo (contracts/geração, driver-sdk, Postgres, CI, ArchUnit, **logging/PII**)
-- **S1** Contrato canônico v0 + multi-tenant/RLS + IAM + spike Bling + ADRs de PII e de montagem
-- **S2** Config do comércio + **transporte driver→core (REC-043, decisão pendente)** + ingestão canônica + **driver-stub** — *marco: venda do stub consolidada no core*
+- **S1** Contrato canônico v0 + multi-tenant/RLS + IAM + spike Bling + ADRs de PII e de montagem + **componente de criptografia de PII (REC-016)**
+- **S2** Config do comércio + **transporte driver→core (REC-043: HTTP de ingestão + outbox)** + ingestão canônica + **driver-stub** — *marco: venda do stub consolidada no core*
 - **S3** driver-bling (OAuth + captura) + **modelo de consentimento/`ConsentPolicy`** — *marco: venda no Bling consolidada sem o core conhecer Bling*
 - **S4** Motor de recorrência + elegibilidade de produto
 - **S5** Ações + outbox (eventos internos)
@@ -109,7 +113,7 @@ O diferencial não é cadastro nem cashback (commodities), é a **recompra antec
 - `tecDoc/CONTEXTO-PROJETO.md` — este arquivo.
 - `tecDoc/roadmap-desenvolvimento-sdd.md` — **o principal para o dev**: core de negócio + cards (instruções, critérios, cenários de teste, SP, NÃO FAZER).
 - `tecDoc/revisoes/2026-11-08-auditoria-produto-x-plano-tecnico.md` — auditoria do tech lead, aplicada no roadmap.
-- `docs/adr/` — ADR-0001 (contrato canônico, Aceita), ADR-0002 (Boot 4.1, Aceita), ADR-0003 (WhatsApp só oficial, Aceita), ADR-0004 (criptografia de PII, **Proposta**).
+- `docs/adr/` — ADR-0001 (contrato canônico, Aceita), ADR-0002 (Boot 4.1, Aceita), ADR-0003 (WhatsApp só oficial, Aceita), ADR-0004 (criptografia de PII, **Aceita**, Opção B).
 
 **Fora do repositório (não estão em `tecDoc/`; existiam na fase anterior de documentação, em outro local):**
 - `desenho-tecnico-plataforma.md` / `.docx`, `plano-desenvolvimento-plataforma.md` / `.docx` — arquitetura, endpoints, casos de uso, pontos de função, precificação.
