@@ -53,4 +53,4 @@ Começar um projeto greenfield numa linha sem patches de segurança contraria a 
 
 1. [x] REC-001 montado com Boot 4.1.1, springdoc 3.1.0 e Gradle 9.2.1.
 2. [ ] Bump para Boot 4.2.x quando sair o GA (só alterar `spring-boot` no version catalog).
-3. [ ] Atualizar a stack no `CONTEXTO-PROJETO.md` §3.
+3. [x] Atualizar a stack no `CONTEXTO-PROJETO.md` §3.
