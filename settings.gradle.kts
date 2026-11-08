@@ -19,5 +19,4 @@ include(
     "drivers:driver-sdk",
     "drivers:driver-bling",
     "messaging:wa-cloud",
-    "messaging:wa-terceiro",
 )

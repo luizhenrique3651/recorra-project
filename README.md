@@ -16,7 +16,6 @@ A arquitetura é **Ports & Adapters, driver-based**: o `core-api` é agnóstico 
 | `drivers/driver-sdk` | lib | `com.recorra.driver.sdk` | Kit para escrever drivers (resiliência, publicação, idempotência) |
 | `drivers/driver-bling` | **app** :8081 | `com.recorra.driver.bling` | Driver do Bling (somente leitura no ERP) |
 | `messaging/wa-cloud` | lib | `com.recorra.messaging.wacloud` | Adapter WhatsApp oficial (Meta Cloud API) |
-| `messaging/wa-terceiro` | lib | `com.recorra.messaging.waterceiro` | Adapter WhatsApp de terceiro |
 
 Regra de ouro: **o core nunca conhece um ERP**. A única ponte entre core e drivers é o `contracts`.
 

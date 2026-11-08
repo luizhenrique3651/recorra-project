@@ -54,5 +54,5 @@ A auditoria produto × plano técnico (`tecDoc/revisoes/2026-11-08-auditoria-pro
 
 1. [x] Cortar o REC-052 do roadmap e registrar o motivo.
 2. [x] Atualizar `CONTEXTO-PROJETO.md` §3 e §5.3.
-3. [ ] Remover `messaging:wa-terceiro` do `settings.gradle.kts`, do diretório e do README (**dono: REC-001**).
+3. [x] Remover `messaging:wa-terceiro` do `settings.gradle.kts`, do diretório e do README (**dono: REC-001**).
 4. [ ] Abrir o processo de Business verification da Meta (frente externa, usuário).

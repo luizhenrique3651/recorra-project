@@ -1,4 +1,4 @@
-// Módulos-biblioteca: contracts, common, driver-sdk, wa-cloud, wa-terceiro.
+// Módulos-biblioteca: contracts, common, driver-sdk, wa-cloud.
 
 plugins {
   id("recorra.java-conventions")
