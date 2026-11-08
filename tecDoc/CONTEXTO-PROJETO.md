@@ -1,7 +1,7 @@
 # Contexto do Projeto — Recorra
 ### Documento-âncora para retomar o trabalho em uma nova sessão
 
-*Atualizado: novembro/2026 · Autor: Luiz Henrique Albuquerque Coelho (dev — Java/Spring Boot)*
+*Atualizado: 2026-11-08 (auditoria aplicada) · Autor: Luiz Henrique Albuquerque Coelho (dev — Java/Spring Boot)*
 
 > **Para que serve este arquivo:** resumir todo o contexto do projeto num só lugar, para iniciar uma conversa nova do zero sem perder o fio. Leia isto primeiro.
 
@@ -22,30 +22,32 @@ O diferencial não é cadastro nem cashback (commodities), é a **recompra antec
 3. Decidimos **generalizar**: o núcleo nunca foi "sobre estética automotiva" — é inteligência de recompra, que serve a qualquer varejo B2C com compra recorrente e cliente identificável (pet shop, farmácia/suplemento, cosmético, agro, auto peças, etc.).
 4. Rearquitetamos para um **produto horizontal driver-based** e reescrevemos toda a documentação técnica nesse novo formato.
 
-**Fase atual: PRÉ-DESENVOLVIMENTO.** Documentação concluída; prestes a montar o monorepo e iniciar o Sprint 0. Nenhuma linha de código escrita ainda.
+**Fase atual: INÍCIO DO SPRINT 0.** O bootstrap do monorepo (REC-001) já existe no repositório: 7 módulos Gradle, `build-logic` com convention plugins, version catalog, `core-api` e `driver-bling` como apps Spring Boot com `/actuator/health`. A auditoria de 2026-11-08 constatou que o `./gradlew build` ainda não foi verificado e que não há domínio nem endpoint de negócio. Os documentos de referência estão em `tecDoc/` (este arquivo e o roadmap) e `docs/adr/`. A auditoria produto × plano técnico está em `tecDoc/revisoes/2026-11-08-auditoria-produto-x-plano-tecnico.md` e seus achados foram aplicados no roadmap (cards novos, cortes e re-sequenciamento).
 
 ---
 
 ## 3. Decisões de arquitetura (fixas)
 
 - **Ports & Adapters (hexagonal).** `core-api` é o domínio, **agnóstico de ERP**. Cada ERP tem um **driver** (anti-corruption layer) que traduz o ERP para um **modelo canônico** e empurra eventos ao core. Regra de ouro: o core nunca conhece um ERP concreto — proibido `if (erp == "bling")` no core.
-- **Contrato canônico** é a fonte da verdade entre core e drivers (modelo + eventos canônicos). Definido como **schema neutro** (AsyncAPI/JSON Schema + OpenAPI) com classes Java **geradas** — *(decisão a confirmar: schema neutro vs jar Java simples)*.
-- **Monorepo** Gradle multi-módulo: `contracts`, `common`, `core-api`, `drivers/driver-sdk`, `drivers/driver-bling`, `messaging/wa-cloud`, `messaging/wa-terceiro`. Deploy independente por serviço, CI por path.
+- **Contrato canônico** é a fonte da verdade entre core e drivers (modelo + eventos canônicos). Definido como **JSON Schema** (fonte única, draft-07) referenciado por AsyncAPI 3.0 e OpenAPI 3.1, com classes Java **geradas** pelo `jsonschema2pojo` — **decisão fechada na ADR-0001**.
+- **Monorepo** Gradle multi-módulo: `contracts`, `common`, `core-api`, `drivers/driver-sdk`, `drivers/driver-bling`, `messaging/wa-cloud` (e `messaging/wa-terceiro`, que existe no bootstrap mas está **fora do MVP**, ADR-0003, e será removido pelo REC-001). Deploy independente por serviço, CI por path.
 - **Read-only no ERP.** Drivers só leem; nunca escrevem venda/nota (elimina risco fiscal).
 - **Multi-tenant** por comércio (`comercio_id` + Row-Level Security no Postgres). Hierarquia `conta → comércio(unidade)`.
-- **WhatsApp é uma porta** (`MessagingPort`) com adapters: oficial (Meta Cloud API, ~R$0,37/msg, número seguro) vs terceiro (número dedicado, mais barato, mais risco).
+- **WhatsApp é uma porta** (`MessagingPort`). No MVP existe **um único adapter: a API oficial da Meta (Cloud API, ~R$0,37/msg de marketing)**. O adapter de terceiro/não oficial foi cortado do MVP por risco de produto e jurídico (**ADR-0003**). A porta permanece para outro provedor oficial no futuro.
 - **Vertical-agnóstico:** regras de cada vertical entram como **configuração** (`RegraVertical`), não código.
-- **Assíncrono por eventos** (outbox + RabbitMQ → Kafka na escala), idempotência por `erp_venda_id`.
+- **Assíncrono por eventos**, idempotência por `erp_venda_id`. Transporte driver→core: ⚠️ **decisão pendente (REC-043)**: RabbitMQ (Kafka só na escala) ou HTTP de ingestão idempotente + outbox/poller no Postgres para eventos internos.
 
-**Stack:** Java 21, Spring Boot 3.3, PostgreSQL 16 (RLS), Flyway, RabbitMQ, Redis, WebClient + Resilience4j, Spring Batch, Testcontainers/WireMock, ArchUnit, Docker/Kubernetes (EKS), GitHub Actions + ArgoCD, Grafana/OTel. Frontend do dashboard: React (separado).
+**Stack:** Java 21, **Spring Boot 4.1** (ADR-0002; subir para 4.2 quando sair o GA, previsto para nov/2026), Gradle 9, PostgreSQL 16 (RLS), Flyway, WebClient + Resilience4j, `@Scheduled` + cursor para os jobs, Testcontainers/WireMock, ArchUnit, GitHub Actions, Micrometer/OTel. RabbitMQ: ⚠️ pendente (REC-043). Frontend do dashboard: ⚠️ pendente (React mínimo × resumo semanal, REC-064).
+
+**Fora do MVP (Fase 2):** Redis (dedup passa a ser tabela com `unique` no Postgres), Spring Batch (só se um backfill pedir), Kubernetes/EKS/ArgoCD/Terraform/Amazon MQ/ElastiCache (o piloto roda em deploy simples: 1 VM, ECS ou PaaS, com Postgres gerenciado), papéis `MANAGER`/`SELLER` (o MVP tem `SUPER_ADMIN` + `OWNER`).
 
 ---
 
 ## 4. Core de negócio (resumo)
 
 - **Conceitos:** Conta, Comércio (tenant), Cliente, Produto, Venda/Item, CicloRecompra, PerfilConsumoCliente, AçãoRecomendada, Mensagem, RegraVertical.
-- **Recorrência:** por cliente×produto, `intervalo_medio_dias` = mediana dos gaps; `proxima_prevista = ultima_compra + intervalo`; confiança cresce com nº de compras.
-- **Ação de reposição:** gerada quando `hoje ≥ proxima_prevista − N` (N = janela configurável), se houver opt-in e não existir ação ativa igual.
+- **Recorrência:** por cliente×produto, `intervalo_medio_dias` = **mediana** dos gaps; `proxima_prevista = ultima_compra + intervalo`; **2 compras = ciclo de baixa confiança, que não gera ação; só ≥3 compras (≥2 gaps) geram ação**. Compras no mesmo dia contam como uma ocorrência. A quantidade comprada não entra no cálculo (limitação do MVP).
+- **Ação de reposição:** gerada quando `proxima_prevista − N ≤ hoje ≤ proxima_prevista + tolerância de atraso` (N = janela configurável por comércio, fonte única na config do comércio; "hoje" no fuso do comércio), se houver opt-in (`ConsentPolicy`), o produto for elegível e não existir ação ativa igual. Ação PENDENTE que passa da tolerância de atraso sem envio expira (⚠️ regra proposta, confirmar); nunca se envia reposição fora da janela.
 - **Fluxo:** ERP → driver (captura+normaliza) → evento canônico → core (consolida) → inteligência (recorrência/perfil) → ação → WhatsApp → status → feedback.
 - **Invariantes:** read-only no ERP; core agnóstico; idempotência; multi-tenant; opt-in/LGPD; regras da Meta para WhatsApp; minimização de dados (MVP só nome+WhatsApp).
 
@@ -53,12 +55,21 @@ O diferencial não é cadastro nem cashback (commodities), é a **recompra antec
 
 ## 5. Decisões em aberto (a fechar antes/no início do dev)
 
-1. **Formato do contrato:** schema neutro (gera Java; permite drivers de terceiros/poliglotas) vs jar Java compartilhado (mais simples). *Recomendado: schema neutro.*
-2. **Estratégia de captura do Bling:** o portal público da API é insuficiente → **contatar o suporte do Bling** para confirmar webhooks de venda, rate limits e escopos. (É o que destrava o driver-bling.)
-3. **Adapter de WhatsApp padrão:** oficial (pago, seguro) vs terceiro (barato, risco).
-4. **IdP:** Keycloak (self-host) vs Cognito. *(a fixar)*
+**Fechadas**
+
+1. ~~**Formato do contrato**~~ — **fechada pela ADR-0001** (Aceita): JSON Schema como fonte única, Java gerado por `jsonschema2pojo`.
+3. ~~**Adapter de WhatsApp padrão**~~ — **fechada pela ADR-0003** (Aceita): **só a Meta Cloud API oficial no MVP**; o adapter de terceiro foi cortado (auditoria C5). O onboarding da Meta (Business verification, WABA, número, template aprovado por comércio) é caminho crítico do piloto e deve começar já (ver "Frentes externas" no roadmap).
+
+**Em aberto (decisão do usuário)**
+
+2. **Estratégia de captura do Bling:** o portal público da API é insuficiente → **contatar o suporte do Bling** para confirmar webhooks de venda, rate limits e escopos. É o que destrava o driver-bling. **Abrir esta frente agora, fora do board** (não esperar o Sprint 1).
+4. **IdP:** Keycloak (self-host) vs Cognito. *(a fixar; REC-012)*
 5. **Nome/marca do produto:** hoje "Recorra" é só codinome nos pacotes.
-6. **Vertical e ERP de praia (beachhead)** para o go-to-market.
+6. **Vertical, ERP de praia (beachhead) e comerciante-piloto** para o go-to-market. Depende da análise do export real do Bling (taxa de vendas com cliente e telefone, clientes com ≥3 compras do mesmo SKU).
+7. **Estratégia de captação de opt-in** na loja (QR, link no recibo, importação com prova de consentimento) e o **papel LGPD/DPA** com o comércio (REC-054, ADR-0004).
+8. **Transporte driver→core:** RabbitMQ × HTTP de ingestão + outbox (REC-043).
+9. **Visibilidade para o dono no piloto:** UI React mínima × resumo semanal (REC-064).
+10. **Criptografia de PII em repouso** (ADR-0004, Proposta; REC-014).
 
 ---
 
@@ -74,37 +85,45 @@ O diferencial não é cadastro nem cashback (commodities), é a **recompra antec
 
 ## 7. Roadmap do MVP (resumo)
 
-8 sprints de 2 semanas, regime parcial (~20–24 SP/sprint), **~176 SP · 3 a 5 meses**:
+10 sprints de 2 semanas (S0–S9), regime parcial (~20–24 SP/sprint), **~221 SP · ~5 meses**. O plano original tinha 8 sprints e ~176 SP no cabeçalho (os cards somavam 190); a auditoria acrescentou cards que faltavam (consentimento, captação de opt-in, onboarding da Meta, driver-stub, logging/PII, atribuição, resumo/UI, teto de envio) e cortou excesso (wa-terceiro, EKS, Redis etc.). Detalhe e mapa de numeração no roadmap (§2).
 
-- **S0** Fundação do monorepo (contracts/geração, driver-sdk, Postgres, CI, ArchUnit)
-- **S1** Contrato canônico v0 + multi-tenant/RLS + IAM + spike Bling
-- **S2** Ingestão canônica + driver-bling (auth + captura) — *marco: venda no Bling consolidada sem o core conhecer Bling*
-- **S3** Motor de recorrência
-- **S4** Ações + outbox + broker (RabbitMQ)
-- **S5** Mensageria + adapters WhatsApp + opt-in
-- **S6** Dashboard + higienização + config de vertical
-- **S7** Hardening + LGPD + piloto + **prova do 2º driver** (diff do core = vazio)
-- **S8+** Fase 2 (cross-sell, segmentação, novos drivers, marketplace, white-label)
+- **S0** Fundação do monorepo (contracts/geração, driver-sdk, Postgres, CI, ArchUnit, **logging/PII**)
+- **S1** Contrato canônico v0 + multi-tenant/RLS + IAM + spike Bling + ADRs de PII e de montagem
+- **S2** Config do comércio + **transporte driver→core (REC-043, decisão pendente)** + ingestão canônica + **driver-stub** — *marco: venda do stub consolidada no core*
+- **S3** driver-bling (OAuth + captura) + **modelo de consentimento/`ConsentPolicy`** — *marco: venda no Bling consolidada sem o core conhecer Bling*
+- **S4** Motor de recorrência + elegibilidade de produto
+- **S5** Ações + outbox (eventos internos)
+- **S6** Mensageria: `MessagingPort` + **onboarding WhatsApp do comércio** + adapter oficial + **teto/custo de envio**
+- **S7** Consumer de envio + status, **captação de opt-in**, feedback de ações, **atribuição automática de conversão**
+- **S8** Dashboard + resumo/UI (decisão pendente) + higienização + regras por vertical
+- **S9** Hardening + LGPD + deploy simples do piloto
+- **Fase 2** Prova formal do 2º driver (REC-073, após o piloto), cross-sell, segmentação, novos drivers, marketplace, white-label
 
-**Próximo passo imediato:** fechar as decisões em aberto (§5) e iniciar o **Sprint 0** (montar o monorepo). O desenvolvimento será **assistido por IA em Spec-Driven Development** — cada card do roadmap vira `spec.md` → `plan.md` → código, respeitando a seção "NÃO FAZER" de cada card.
+**Próximo passo imediato:** abrir as frentes externas (suporte do Bling, processo da Meta, análise do export do comerciante-candidato, DPA), fechar as decisões em aberto (§5) e seguir com o **Sprint 0**. O desenvolvimento será **assistido por IA em Spec-Driven Development** — cada card do roadmap vira `spec.md` → `plan.md` → código, respeitando a seção "NÃO FAZER" de cada card.
 
 ---
 
-## 8. Artefatos já produzidos (arquivos)
+## 8. Artefatos
 
-**Documentação técnica (versão genérica, atual):**
-- `desenho-tecnico-plataforma.md` / `.docx` — arquitetura driver-based, contrato canônico, portas.
-- `plano-desenvolvimento-plataforma.md` / `.docx` — stack, monorepo, endpoints, mensageria, casos de uso, pontos de função, precificação.
-- `roadmap-desenvolvimento-sdd.md` / `.docx` — **o principal para iniciar o dev**: core de negócio + cards Jira detalhados (instruções de dev, critérios, cenários de teste, SP, NÃO FAZER).
-- `roadmap-sprints-plataforma.md` / `.docx` — versão anterior (mais enxuta) do roadmap; a `-sdd` a supera.
+**No repositório (fonte da verdade):**
+- `tecDoc/CONTEXTO-PROJETO.md` — este arquivo.
+- `tecDoc/roadmap-desenvolvimento-sdd.md` — **o principal para o dev**: core de negócio + cards (instruções, critérios, cenários de teste, SP, NÃO FAZER).
+- `tecDoc/revisoes/2026-11-08-auditoria-produto-x-plano-tecnico.md` — auditoria do tech lead, aplicada no roadmap.
+- `docs/adr/` — ADR-0001 (contrato canônico, Aceita), ADR-0002 (Boot 4.1, Aceita), ADR-0003 (WhatsApp só oficial, Aceita), ADR-0004 (criptografia de PII, **Proposta**).
 
-**Histórico (específico da Zaplus — referência, não mais o produto):**
+**Fora do repositório (não estão em `tecDoc/`; existiam na fase anterior de documentação, em outro local):**
+- `desenho-tecnico-plataforma.md` / `.docx`, `plano-desenvolvimento-plataforma.md` / `.docx` — arquitetura, endpoints, casos de uso, pontos de função, precificação.
+- `roadmap-desenvolvimento-sdd.docx` e `roadmap-sprints-plataforma.md` / `.docx` — o `-sdd.md` do repositório os supera; o `roadmap-sprints-plataforma` é a versão anterior e está obsoleta.
+
+> Se esses arquivos forem necessários, localize-os com o autor e traga-os para `tecDoc/`. Nada neste repositório depende deles.
+
+**Histórico (específico da Zaplus — referência, não mais o produto, fora do repositório):**
 - `conceito-produto-estetica-automotiva.md`, `desenho-tecnico-e-requisitos-mvp.md`, `plano-desenvolvimento-tecnico.md`, `roadmap-sprints-jira.md`, e os decks `proposta-produto-estetica.pptx` / `proposta-mvp-roadmap.pptx`.
 
 ---
 
 ## 9. Como retomar numa nova sessão (sugestão de primeira mensagem)
 
-> "Estou retomando o projeto **Recorra** (plataforma horizontal de inteligência de recompra, arquitetura driver-based / Ports & Adapters, monorepo Java/Spring). Anexo o `CONTEXTO-PROJETO.md` e o `roadmap-desenvolvimento-sdd.md`. Estamos em pré-desenvolvimento. Quero começar por [fechar a decisão X / montar o Sprint 0 / gerar o contrato canônico v0 / etc.]."
+> "Estou retomando o projeto **Recorra** (plataforma horizontal de inteligência de recompra, arquitetura driver-based / Ports & Adapters, monorepo Java/Spring). Anexo o `CONTEXTO-PROJETO.md` e o `roadmap-desenvolvimento-sdd.md`. Estamos no Sprint 0. Quero começar por [fechar a decisão X / montar o Sprint 0 / gerar o contrato canônico v0 / etc.]."
 
 Assim a nova janela parte com todo o contexto e sem a poluição do histórico.
