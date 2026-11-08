@@ -1,0 +1,30 @@
+# Versões centralizadas do monorepo Recorra.
+# Bibliotecas sem "version" têm a versão gerenciada pelo BOM do Spring Boot.
+
+[versions]
+java = "21"
+spring-boot = "4.1.1"     # ADR-0002 — subir para 4.2.x no GA
+springdoc = "3.1.0"       # linha 3.x = Spring Boot 4
+spotless = "8.6.0"
+spotbugs-plugin = "6.5.4"
+
+[libraries]
+# BOM aplicado a todos os módulos (via recorra.java-conventions)
+spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
+
+# Starters (Boot 4: modulares — "webmvc" substitui "web")
+spring-boot-starter-webmvc = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
+spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+springdoc-webmvc-ui = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
+
+# Testes
+spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+spring-boot-starter-webmvc-test = { module = "org.springframework.boot:spring-boot-starter-webmvc-test" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+assertj-core = { module = "org.assertj:assertj-core" }
+
+# Plugins usados pelos convention plugins (build-logic)
+spring-boot-gradle-plugin = { module = "org.springframework.boot:spring-boot-gradle-plugin", version.ref = "spring-boot" }
+spotless-gradle-plugin = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
+spotbugs-gradle-plugin = { module = "com.github.spotbugs.snom:spotbugs-gradle-plugin", version.ref = "spotbugs-plugin" }
