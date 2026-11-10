@@ -4,7 +4,7 @@ Plataforma horizontal de inteligência de recompra. O sistema lê as vendas do E
 
 A arquitetura é **Ports & Adapters, driver-based**: o `core-api` é agnóstico de ERP, e cada ERP tem um *driver* que traduz os dados para o **contrato canônico**.
 
-> Contexto completo: [`tecDoc/CONTEXTO-PROJETO.md`](tecDoc/CONTEXTO-PROJETO.md) · Roadmap: [`tecDoc/roadmap-desenvolvimento-sdd.md`](tecDoc/roadmap-desenvolvimento-sdd.md) · Decisões: [`docs/adr/`](docs/adr/)
+> Contexto completo: [`tecDoc/CONTEXTO-PROJETO.md`](tecDoc/CONTEXTO-PROJETO.md) · Roadmap: [`tecDoc/roadmap-desenvolvimento-sdd.md`](tecDoc/roadmap-desenvolvimento-sdd.md) · Decisões: [`docs/adr/`](docs/adr/) · Guia para agentes de IA: [`AGENTS.md`](AGENTS.md)
 
 ## Módulos
 
