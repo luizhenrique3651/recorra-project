@@ -70,10 +70,31 @@ tasks.withType<SpotBugsTask>().configureEach {
 
 tasks.named("spotbugsTest") { enabled = false }
 
-// ---- JaCoCo: relatório + verificação de 80% de linha (classes *Application ficam fora) ----
+// ---- JaCoCo: relatório + verificação de 80% de linha ----
+// Fora da base do relatório e do gate:
+//  * classes *Application (só o main do Spring);
+//  * código gerado (tudo cujo .java está sob build/generated/, ex.: jsonschema2pojo do contracts):
+//    não é escrito por nós, não se testa, e entraria na base como cobertura falsa ou como buraco.
+val dirGerado = layout.buildDirectory.dir("generated")
+
+fun classesDoCodigoGerado(raizes: Set<File>, gerado: File): List<String> =
+    raizes
+        .filter { it.exists() && it.startsWith(gerado) }
+        .flatMap { raiz ->
+          raiz
+              .walkTopDown()
+              .filter { it.isFile && it.extension == "java" }
+              .map { it.relativeTo(raiz).path.removeSuffix(".java").replace(File.separatorChar, '/') }
+              .toList()
+        }
+
 val classesCobertas =
     sourceSets.main.map { main ->
-      main.output.asFileTree.matching { exclude("**/*Application.class") }
+      val geradas = classesDoCodigoGerado(main.java.srcDirs, dirGerado.get().asFile)
+      main.output.asFileTree.matching {
+        exclude("**/*Application.class")
+        geradas.forEach { exclude("$it.class", "$it\$*.class") }
+      }
     }
 
 tasks.jacocoTestReport {
@@ -98,4 +119,30 @@ tasks.jacocoTestCoverageVerification {
   }
 }
 
-tasks.check { dependsOn(tasks.jacocoTestCoverageVerification) }
+// Sem vacuidade: o JaCoCo PULA a verificação quando não há dados de execução ("missing execution
+// data"), então um módulo com classes de produção e zero testes passaria sem ninguém notar. Aqui
+// isso FALHA o build. Módulo sem classes de produção (só package-info, só *Application) passa.
+val verificarDadosDeCobertura =
+    tasks.register("verificarDadosDeCobertura") {
+      group = "verification"
+      description = "Falha se há classes de produção e nenhum dado de execução do JaCoCo."
+      dependsOn(tasks.test)
+      val classes = classesCobertas
+      val execucao = tasks.test.map { it.extensions.getByType<JacocoTaskExtension>().destinationFile }
+      val modulo = project.path
+      doLast {
+        val temClassesDeProducao = classes.get().files.any { it.name.endsWith(".class") }
+        val arquivo = execucao.get()
+        if (temClassesDeProducao && (!arquivo.exists() || arquivo.length() == 0L)) {
+          throw GradleException(
+              "Módulo $modulo tem classes de produção, mas nenhum dado de execução do JaCoCo " +
+                  "(nenhum teste rodou). Sem isso o gate de cobertura seria vacuamente verde: " +
+                  "escreva os testes do módulo.")
+        }
+      }
+    }
+
+tasks.check {
+  dependsOn(verificarDadosDeCobertura)
+  dependsOn(tasks.jacocoTestCoverageVerification)
+}

@@ -47,6 +47,18 @@ Resumo; o detalhe está no CONTEXTO §3 e nas ADRs.
 `specs/REC-XXX/spec.md` (contratos, modelo tocado, casos de teste) → `specs/REC-XXX/plan.md` (passos) → código → um PR verde para `develop`.
 Pronto = **DoD do roadmap §3.3**. Não altere nada fora do escopo do card.
 
+Etapas de revisão de cada card, nesta ordem:
+1. caça a erros;
+2. revisões de arquitetura, performance e manutenibilidade;
+3. tech lead;
+4. warnings;
+5. QA.
+
+**QA:** além do teste funcional, o QA **analisa os testes escritos pelo dev** e **adiciona testes unitários, de integração ou funcionais quando julgar relevante**, por exemplo para cobrir lacunas nos cenários do card, bordas, invariantes do §1.6 ou PII fora de log e de `toString`.
+- Faz isso **sem pedir confirmação** ao usuário nem ao tech lead.
+- Escreve só em `src/test` e nunca altera código de produção.
+- Os testes acrescentados entram no commit do card e são listados na entrega do QA.
+
 ## 5. Comandos
 
 O JDK 21 vem do SDKMAN, que só carrega em shell interativo. Em shell não interativo, prefixe:
@@ -68,4 +80,48 @@ Sempre pelo wrapper (`./gradlew`), nunca por `gradle`/`mvn` global.
 
 ## 6. Git
 
-O usuário controla o git: **peça antes** de commitar, criar branch, dar push ou fazer merge, e antes de instalar ferramentas na máquina. Nomes de branch e commit seguem o roadmap §3.4.
+O usuário controla o git.
+
+- **Agentes podem criar branch** para a task (a partir da `develop`, com o nome do roadmap §3.4).
+- **Agentes nunca commitam, dão push, fazem merge nem abrem PR**, nem com autorização implícita. Commit e PR são do usuário.
+- Ciclo de entrega: o agente conclui a task e deixa o trabalho na árvore, **avisa o usuário** e **sugere a mensagem de commit** (formato do roadmap §3.4, ex.: `feat(REC-002): ...`); os dois revisam juntos; o usuário commita e avisa. **Só então** começa a próxima task.
+- Instalar ferramentas na máquina: **peça antes**.
+
+### 6.1 Execução em lote (várias tasks sem revisão intermediária)
+
+Quando o usuário pedir uma sequência (ex.: "execute do REC-002 ao REC-005"), cada task segue o fluxo completo (§4 + revisões), **na ordem**, e cada uma é construída sobre a anterior, sem commit:
+
+1. Crie a branch da task (`switch -c` a partir da branch da task anterior; a primeira sai da `develop`).
+2. Implemente e passe pelas revisões até a task ficar pronta.
+3. **Tire o snapshot** da árvore, sem commit, guardado fora do repositório:
+   ```bash
+   S=~/.cache/egeon-recorra; mkdir -p $S
+   GIT_INDEX_FILE=$S/idx git read-tree HEAD && GIT_INDEX_FILE=$S/idx git add -A \
+     && GIT_INDEX_FILE=$S/idx git write-tree > $S/snap-rec-XXX && rm $S/idx
+   ```
+4. Siga para a próxima task com a árvore como está.
+
+No fim, entregue ao usuário **um único bloco** com o commit de cada branch e a **ordem das PRs**:
+
+```bash
+cd ~/Documents/recorraProject
+S=~/.cache/egeon-recorra
+git switch -C feature/REC-002-contracts-codegen develop
+git read-tree $(cat $S/snap-rec-002) && git commit -m "feat(REC-002): ..."
+git switch -C feature/REC-003-ci-github-actions
+git read-tree $(cat $S/snap-rec-003) && git commit -m "chore(REC-003): ..."
+# ... uma dupla de linhas por task, na ordem
+git status   # deve ficar limpo
+```
+
+```text
+PRs, nesta ordem (empilhadas):
+1. feature/REC-002-... -> develop
+2. feature/REC-003-... -> feature/REC-002-...  (ou -> develop, depois do merge da 1)
+```
+
+Regras do lote:
+- `git switch -C` em cima do HEAD atual não mexe na árvore. O `read-tree` troca só o índice, e com isso cada commit leva exatamente o estado da sua task.
+- O snapshot inclui tudo que não está no `.gitignore`. Antes de tirá-lo, confira o `git status` para que lixo de build (ex.: `build-logic/.kotlin/`) não entre no commit.
+- Os snapshots são objetos git soltos e o `git gc` os apaga depois de ~2 semanas. Por isso o usuário deve commitar o lote antes disso.
+- Se uma task falhar ou depender de decisão do usuário, **pare o lote ali** e entregue o bloco só até a última task pronta.

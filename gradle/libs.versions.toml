@@ -7,6 +7,7 @@ spring-boot = "4.1.1"     # ADR-0002 — subir para 4.2.x no GA
 springdoc = "3.1.0"       # linha 3.x = Spring Boot 4
 spotless = "8.6.0"
 spotbugs-plugin = "6.5.4"
+jsonschema2pojo = "1.3.3"   # REC-002 / ADR-0001 — gerador único do contrato
 
 [libraries]
 # BOM aplicado a todos os módulos (via recorra.java-conventions)
@@ -16,6 +17,11 @@ spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies"
 spring-boot-starter-webmvc = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
 springdoc-webmvc-ui = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
+
+# Jackson (versões no BOM do Spring Boot). Boot 4 usa Jackson 3 (tools.jackson.*);
+# as anotações continuam em com.fasterxml.jackson.annotation (REC-002).
+jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations" }
+jackson-databind = { module = "tools.jackson.core:jackson-databind" }
 
 # Testes
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
@@ -28,3 +34,5 @@ assertj-core = { module = "org.assertj:assertj-core" }
 spring-boot-gradle-plugin = { module = "org.springframework.boot:spring-boot-gradle-plugin", version.ref = "spring-boot" }
 spotless-gradle-plugin = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
 spotbugs-gradle-plugin = { module = "com.github.spotbugs.snom:spotbugs-gradle-plugin", version.ref = "spotbugs-plugin" }
+jsonschema2pojo-gradle-plugin = { module = "org.jsonschema2pojo:jsonschema2pojo-gradle-plugin", version.ref = "jsonschema2pojo" }
+jsonschema2pojo-core = { module = "org.jsonschema2pojo:jsonschema2pojo-core", version.ref = "jsonschema2pojo" }

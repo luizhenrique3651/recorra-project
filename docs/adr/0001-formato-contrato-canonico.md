@@ -125,8 +125,8 @@ O gerador é **substituível**: se o `jsonschema2pojo` travar (ver riscos), troc
 
 ## Itens de ação
 
-1. [ ] REC-002: criar o layout acima e um schema mínimo de `venda.canonica.registrada`; gerar o Java e fazer round-trip com o `ObjectMapper` do Boot 4.
-2. [ ] REC-002: provar a geração no Gradle 9 (plugin oficial ou task própria).
+1. [x] REC-002: criar o layout acima e um schema mínimo de `venda.canonica.registrada`; gerar o Java e fazer round-trip com o `ObjectMapper` do Boot 4. — feito em 2026-11-10 (REC-002: layout, schema mínimo e round-trip com o mapper do Boot 4).
+2. [x] REC-002: provar a geração no Gradle 9 (plugin oficial ou task própria). — feito em 2026-11-10 (REC-002: geração provada no Gradle 9.2.1 com o plugin oficial `org.jsonschema2pojo` 1.3.3; sem task própria).
 3. [ ] REC-003: no CI, validar schemas e fixtures (ex.: `networknt/json-schema-validator`).
 4. [ ] REC-010: fechar todos os tipos/eventos, documentar a política SemVer no `contracts/README.md` e taguear `contracts-v0.1.0`.
 5. [x] Atualizar o `CONTEXTO-PROJETO.md` §3/§5: decisão nº 1 fechada.
