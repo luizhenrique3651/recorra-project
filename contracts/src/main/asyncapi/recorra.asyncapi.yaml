@@ -1,0 +1,25 @@
+asyncapi: 3.0.0
+info:
+  title: Recorra — eventos canônicos
+  version: 0.1.0
+  description: >-
+    Canais e mensagens do contrato canônico. Os formatos vivem nos JSON Schemas
+    (ADR-0001); este arquivo só os referencia por $ref e não redefine nada.
+channels:
+  vendaCanonicaRegistrada:
+    address: venda.canonica.registrada
+    messages:
+      vendaCanonicaRegistrada:
+        $ref: '#/components/messages/VendaCanonicaRegistrada'
+operations:
+  publicarVendaCanonicaRegistrada:
+    action: send
+    channel:
+      $ref: '#/channels/vendaCanonicaRegistrada'
+components:
+  messages:
+    VendaCanonicaRegistrada:
+      name: venda.canonica.registrada
+      contentType: application/json
+      payload:
+        $ref: '../schemas/eventos/venda-canonica-registrada.schema.json'

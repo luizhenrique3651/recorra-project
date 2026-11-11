@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://recorra.com/contracts/modelo/venda-canonica.schema.json",
+  "title": "VendaCanonica",
+  "description": "Venda no modelo neutro, sem nenhum detalhe de ERP. Modelo mínimo do REC-002; o completo é o REC-010.",
+  "type": "object",
+  "properties": {
+    "erp": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Código do ERP de origem, opaco para o core."
+    },
+    "erp_venda_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identificador da venda no ERP, string opaca (chave de idempotência)."
+    },
+    "data_venda": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "valor_total": {
+      "type": "number",
+      "minimum": 0
+    }
+  },
+  "required": ["erp", "erp_venda_id", "data_venda", "valor_total"]
+}
