@@ -17,8 +17,9 @@ caso() { # <descrição> <esperado: "todos core bling"> <arquivos...>
 }
 
 caso "só driver-bling → só o driver"        "false false true"  drivers/driver-bling/src/main/Foo.java
-caso "driver-sdk → tudo (ninguém depende)"  "true false false"    drivers/driver-sdk/build.gradle.kts
-caso "messaging → tudo (ninguém depende)"   "true false false"    messaging/wa-cloud/build.gradle.kts
+caso "driver-sdk → tudo (o driver depende, mas não testa o sdk)"  "true false false"    drivers/driver-sdk/build.gradle.kts
+caso "architecture-tests → tudo"            "true false false"  architecture-tests/src/test/java/X.java
+caso "messaging → tudo (sem job próprio)"   "true false false"    messaging/wa-cloud/build.gradle.kts
 caso "só core-api → só o core"              "false true false"  core-api/src/main/resources/application.yml
 caso "contracts → tudo"                     "true false false"    contracts/src/main/schemas/modelo/x.schema.json
 caso "contracts + driver → tudo"            "true false false"    drivers/driver-bling/a.java contracts/b.json

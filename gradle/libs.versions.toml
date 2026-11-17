@@ -8,6 +8,9 @@ springdoc = "3.1.0"       # linha 3.x = Spring Boot 4
 spotless = "8.6.0"
 spotbugs-plugin = "6.5.4"
 jsonschema2pojo = "1.3.3"   # REC-002 / ADR-0001 — gerador único do contrato
+resilience4j = "2.4.0"   # REC-004 — módulos core (sem Spring): compatíveis com o Boot 4
+archunit = "1.5.1"        # REC-004
+wiremock = "3.13.2"       # REC-004 — standalone (dependências sombreadas, sem conflito com Jackson 3)
 json-schema-validator = "3.0.9"   # REC-003 / ADR-0001 item 3 — validação de schemas/fixtures (Jackson 3)
 
 [libraries]
@@ -25,6 +28,16 @@ spring-boot-starter-flyway = { module = "org.springframework.boot:spring-boot-st
 flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
 postgresql = { module = "org.postgresql:postgresql" }
 
+# Cliente resiliente dos drivers (REC-004). Só os módulos core + operadores Reactor: o starter
+# Spring Boot do Resilience4j não é usado (nada de auto-configuração acoplada ao Boot 3).
+spring-webflux = { module = "org.springframework:spring-webflux" }
+resilience4j-circuitbreaker = { module = "io.github.resilience4j:resilience4j-circuitbreaker", version.ref = "resilience4j" }
+resilience4j-ratelimiter = { module = "io.github.resilience4j:resilience4j-ratelimiter", version.ref = "resilience4j" }
+resilience4j-retry = { module = "io.github.resilience4j:resilience4j-retry", version.ref = "resilience4j" }
+resilience4j-reactor = { module = "io.github.resilience4j:resilience4j-reactor", version.ref = "resilience4j" }
+
+slf4j-api = { module = "org.slf4j:slf4j-api" }   # logs do SDK (versão do BOM)
+
 # Métricas (REC-003): /actuator/prometheus
 micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus" }
 
@@ -41,6 +54,9 @@ spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-te
 testcontainers-junit-jupiter = { module = "org.testcontainers:testcontainers-junit-jupiter" }
 testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql" }
 json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "json-schema-validator" }
+archunit = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
+wiremock = { module = "org.wiremock:wiremock-standalone", version.ref = "wiremock" }
+logback-classic = { module = "ch.qos.logback:logback-classic" }   # ListAppender nos testes de log
 mockito-core = { module = "org.mockito:mockito-core" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }

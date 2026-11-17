@@ -27,7 +27,7 @@ Um workflow, cinco jobs (`escopos`, `todos`, `core-api`, `driver-bling` e o fina
 
 | Alterou | Roda |
 |---|---|
-| `contracts/**`, `build-logic/**`, `common/**`, `gradle/**`, raiz do build, `scripts/**`, `.github/**`, `messaging/**` e `drivers/driver-sdk/**` (nenhum job por módulo depende deles ainda; mover ao escopo do dependente quando passarem a depender), qualquer caminho desconhecido | job `todos`: validação de schemas/fixtures + `./gradlew build` (inclui o TestKit do `build-logic`) |
+| `contracts/**`, `build-logic/**`, `common/**`, `gradle/**`, raiz do build, `scripts/**`, `.github/**`, `messaging/**` e `drivers/driver-sdk/**` (o `driver-bling` já depende do `driver-sdk`, mas o job do driver não roda os testes nem a cobertura do SDK; `messaging/` ainda não tem job próprio; revisitar quando tiverem), qualquer caminho desconhecido | job `todos`: validação de schemas/fixtures + `./gradlew build` (inclui o TestKit do `build-logic`) |
 | `core-api/**` | só `core-api` (`:core-api:build`) |
 | `drivers/driver-bling/**` | só `driver-bling` (`:drivers:driver-bling:build`) |
 | só `docs/`, `specs/`, `tecDoc/`, `*.md` | nenhum job |

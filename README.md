@@ -11,11 +11,12 @@ A arquitetura é **Ports & Adapters, driver-based**: o `core-api` é agnóstico 
 | Módulo | Tipo | Pacote | Papel |
 |---|---|---|---|
 | `contracts` | lib | `com.recorra.contracts` | Contrato canônico: JSON Schema → Java gerado ([ADR-0001](docs/adr/0001-formato-contrato-canonico.md)) |
-| `common` | lib | `com.recorra.common` | Utilidades técnicas, regras ArchUnit |
+| `common` | lib | `com.recorra.common` | Utilidades técnicas (e a convenção de migrations, em testFixtures) |
 | `core-api` | **app** :8080 | `com.recorra.core` | Domínio, inteligência de recompra, ações |
 | `drivers/driver-sdk` | lib | `com.recorra.driver.sdk` | Kit para escrever drivers (resiliência, publicação, idempotência) |
 | `drivers/driver-bling` | **app** :8081 | `com.recorra.driver.bling` | Driver do Bling (somente leitura no ERP) |
 | `messaging/wa-cloud` | lib | `com.recorra.messaging.wacloud` | Adapter WhatsApp oficial (Meta Cloud API) |
+| `architecture-tests` | só testes | `com.recorra.arch` (testes) | Regras ArchUnit: core ↛ driver, driver ↛ core, contrato neutro, SDK sem ERP |
 
 Regra de ouro: **o core nunca conhece um ERP**. A única ponte entre core e drivers é o `contracts`.
 

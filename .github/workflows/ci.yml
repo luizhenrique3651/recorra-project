@@ -1,7 +1,8 @@
 # CI do Recorra (REC-003). Um workflow, jobs por escopo: o job `escopos` decide, a partir dos
 # caminhos alterados (scripts/ci/escopos.sh, testado localmente), o que rodar:
 #   contracts/**, build-logic/**, common/**, gradle/**, raiz, scripts/**, .github/**  → tudo
-#   (messaging/** e drivers/driver-sdk/** também: nenhum job por módulo depende deles ainda)
+#   (messaging/** e drivers/driver-sdk/** também: o job do driver-bling depende do sdk mas não roda os
+#   testes/cobertura dele; messaging/ ainda não tem job próprio)
 #   core-api/**                                                                       → só o core
 #   drivers/driver-bling/**                                                           → só o driver
 #   só docs/specs/tecDoc/*.md                                                         → nada
@@ -94,7 +95,9 @@ jobs:
           distribution: temurin
           java-version: 21
       - uses: gradle/actions/setup-gradle@v4
-      - run: ./gradlew :core-api:build
+      # + testes de arquitetura (REC-004): o core não pode importar driver, e só estes testes veem
+      # os dois lados.
+      - run: ./gradlew :core-api:build :architecture-tests:build
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -105,7 +108,9 @@ jobs:
         if: failure()
         with:
           name: testes-core-api
-          path: core-api/build/reports/tests/**
+          path: |
+            core-api/build/reports/tests/**
+            architecture-tests/build/reports/tests/**
           if-no-files-found: ignore
 
   driver-bling:
@@ -119,7 +124,7 @@ jobs:
           distribution: temurin
           java-version: 21
       - uses: gradle/actions/setup-gradle@v4
-      - run: ./gradlew :drivers:driver-bling:build
+      - run: ./gradlew :drivers:driver-bling:build :architecture-tests:build
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -130,7 +135,9 @@ jobs:
         if: failure()
         with:
           name: testes-driver-bling
-          path: drivers/driver-bling/build/reports/tests/**
+          path: |
+            drivers/driver-bling/build/reports/tests/**
+            architecture-tests/build/reports/tests/**
           if-no-files-found: ignore
 
   # Único required check. `if: always()` porque, sem ele, uma falha anterior o deixaria skipped (=
