@@ -1,0 +1,4 @@
+# Test: a conexão vem do container do Testcontainers (@ServiceConnection); nada a configurar aqui.
+spring:
+  jpa:
+    show-sql: false

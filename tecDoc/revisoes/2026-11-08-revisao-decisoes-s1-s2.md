@@ -1,0 +1,31 @@
+# Revisão de docs — decisões do usuário S1/S2
+
+*Tech lead · 2026-11-08 · Branch `chore/decisoes-sprint1-2` · `:NNN` = linha de `tecDoc/roadmap-desenvolvimento-sdd.md`, salvo indicação.*
+
+**Veredito: REPROVADO.** As 3 decisões e os defaults aparecem em todos os cards afetados (REC-010/013/014/015/020/021/024/035/040/041/042/043/050/053/055/056/063/070/071/072/074); não sobrou "confirmar" nos defaults; o fuso segue pendente; RabbitMQ só como histórico. O problema está nas consequências técnicas: duas contradições de projeto e três itens de segurança, rastreabilidade e durabilidade que o HTTP passou a exigir.
+
+> **Decisão do usuário sobre o item 2 (2026-11-08):** NÃO fixar política de exclusão agora. A ADR registra só que a chave por comércio *permite* excluir descartando a chave; o modo de exclusão (comércio e cliente) e a retenção são decididos no REC-072.
+
+## Correções obrigatórias (por prioridade)
+
+1. **Chave derivada × descarte (ADR-0004:70–71, :82; REC-014:526; REC-072:1458).** Chave derivada de forma determinística (mestra + comercio_id) sempre pode ser derivada de novo: não há o que descartar. → Envelope: chave aleatória por comércio (DEK), guardada cifrada pela mestra (alternativa: sal aleatório por comércio na derivação); descartar = apagar a DEK/sal. Corrigir :82 ("backups ficam ilegíveis"): com a DEK cifrada no próprio Postgres e a mestra viva, o backup segue legível até expirar — escrever como limitação, ou guardar as DEKs fora dos backups do banco (KMS, REC-074).
+2. **Exclusão decidida além do usuário (ADR-0004:71, REC-014:526, CONTEXTO:62, REC-072:1458; contradiz o NÃO FAZER do REC-014 :532).** → Reescrever: "a chave por comércio PERMITE excluir os dados de um comércio descartando a chave; o modo de exclusão (comércio e cliente) e a retenção são decididos no REC-072". *(Confirmado pelo usuário.)*
+3. **Parâmetros mínimos do esquema na ADR-0004 (≈:66–83)** — o schema do REC-020 nasce agora: (a) subchaves separadas para AES e HMAC (HKDF da DEK com contextos diferentes); (b) nonce aleatório de 96 bits por cifra, sem reuso; (c) AAD com comercio_id + coluna; (d) versão da chave no ciphertext (prefixo ou coluna `chave_versao`); (e) rotação do HMAC = recalcular `telefone_hash` em cliente E consentimento no mesmo job, com o unique ativo. Refletir (d) no REC-020:652.
+4. **Ingestão HTTP sem autenticação (REC-043 ≈:621–639, REC-012 :500–503).** Tenant vem do corpo: qualquer cliente que alcance a porta injeta vendas em qualquer comércio. → Credencial do driver (client-credentials JWT, HMAC por driver ou mTLS) e rota no SecurityFilterChain do REC-012; validar que o driver está autorizado para o comercio_id do evento; TLS fora da rede interna. Cenários: "sem credencial → 401"; "driver posta para comércio não vinculado → 403, nada persiste". LOG (obrigatório): rejeição = WARN com traceId, driverId e comercio_id, sem body e sem PII.
+5. **Durabilidade no driver (REC-043 :624, :631; REC-022 webhook 202).** Sem broker, com o core fora o evento fica só na memória do driver e se perde num reinício. → Driver persiste o evento antes do 202 (outbox do driver, pode reaproveitar a tabela de dedup com status) e reentrega dela. Dizer de que lado fica `V0204__falhas_ingestao` (core: rejeição 4xx; driver: tentativas esgotadas; ou ambos). Cenário: "driver reinicia durante o backoff → evento entregue depois". LOG (obrigatório): tentativas esgotadas = um ERROR com traceId, erp_venda_id e tipo, sem payload; métrica de backlog pendente por comércio.
+6. **REC-035:819 — chave e trilha.** Chave só `(comercio_id, telefone_hash)` + `telefone_cifrado` (tirar `telefone_e164` como chave). Em `consentimento_evento`, `telefone` → `telefone_hash` + `telefone_cifrado`; a "prova", se tiver PII, cifrada. O REC-054 (landing/CSV) usa o MESMO normalizador E.164 (REC-024) e o MESMO BlindIndex. Cenário: "mesmo telefone em 2 comércios → telefone_hash diferente".
+7. **REC-043:629 (rastreabilidade, obrigatório).** Regra fechada: payload guardado só cifrado com a DEK do comércio, ou só a referência (erp_venda_id + tipo). Nunca em claro.
+8. **REC-005:360 (log, obrigatório).** Mascaramento e teste de appender cobrem chave mestra, DEKs e subchaves. Novo critério no REC-020: falha de decifra (tag AES-GCM inválida ou chave ausente) = ERROR com traceId, comercio_id, coluna e versão da chave, nunca ciphertext nem valor; exceção tipada, sem engolir.
+9. **Critérios e dono da criptografia (REC-020 :652, :667–673; REC-024 :700–704).** Cenários: "SELECT direto não mostra nome/telefone/CPF/e-mail em claro"; "2 cifras do mesmo valor são diferentes"; "formatos distintos → mesmo telefone_hash"; "decifrar com a chave de outro comércio falha". Dizer qual card implementa o componente (PiiCipher/BlindIndex, envelope, mestra por env) — hoje nenhum é dono. Reestimar; se o S2 passar de ~24 SP, levar ao usuário.
+10. **ADR-0001:19, :96, :112 e ADR-0002:46 — não reescrever ADR Aceita.** Restaurar o texto original e acrescentar ao fim de cada uma "Notas de alteração": "2026-11-08 — o transporte do MVP passou a ser HTTP de ingestão + outbox (REC-043); a menção a RabbitMQ acima fica como contexto da época. A decisão desta ADR não muda." Na ADR-0002, nota igual sobre a linha RabbitMQ da tabela.
+11. **CONTEXTO:94** — "transporte driver→core (REC-043, decisão pendente)" → "(REC-043: HTTP de ingestão + outbox)".
+12. **Nome cifrado em REC-061 (:1381–1388) e REC-060 (:1337+).** O REC-061 usa `qualidade_cadastro` calculado na ingestão (REC-020), nunca SQL sobre o nome. O `/top-clientes` do REC-060 decifra só a página retornada; nada de filtro ou ordenação por nome no banco.
+
+## Sugestões (opcionais)
+
+- ADR-0004:7 "Afeta": acrescentar REC-035, REC-054 e REC-074.
+- Esquema da ADR-0004 nos tokens do ERP e credenciais da Meta (REC-021/055): registrar como consequência derivada, não decisão do usuário.
+- HMAC por comércio: registrar como consequência derivada da chave por comércio (HMAC global permitiria correlacionar telefones entre comércios e anularia o descarte).
+- REC-004:344 "não acoplar a RabbitMQ" → "a um transporte". REC-071:1441 "lag de sync/fila" → "backlog de reentrega/outbox".
+- ADR-0005 (transporte) como referência estável para as notas das ADR-0001/0002.
+- CONTEXTO "Em aberto": fuso como item próprio.

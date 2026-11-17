@@ -1,0 +1,21 @@
+openapi: 3.1.0
+info:
+  title: Recorra — ingestão de eventos canônicos
+  version: 0.1.0
+  description: >-
+    Ingestão síncrona driver → core. Os formatos vivem nos JSON Schemas
+    (ADR-0001); este arquivo só os referencia por $ref e não redefine nada.
+paths:
+  /ingestao/eventos:
+    post:
+      operationId: ingerirEvento
+      summary: Ingere um evento canônico (idempotente por erp_venda_id).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/eventos/venda-canonica-registrada.schema.json'
+      responses:
+        '202':
+          description: Evento aceito.

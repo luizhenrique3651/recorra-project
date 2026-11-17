@@ -15,9 +15,9 @@ rootProject.name = "recorra"
 include(
     "contracts",
     "common",
+    "architecture-tests",
     "core-api",
     "drivers:driver-sdk",
     "drivers:driver-bling",
     "messaging:wa-cloud",
-    "messaging:wa-terceiro",
 )

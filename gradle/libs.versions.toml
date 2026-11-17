@@ -7,6 +7,11 @@ spring-boot = "4.1.1"     # ADR-0002 — subir para 4.2.x no GA
 springdoc = "3.1.0"       # linha 3.x = Spring Boot 4
 spotless = "8.6.0"
 spotbugs-plugin = "6.5.4"
+jsonschema2pojo = "1.3.3"   # REC-002 / ADR-0001 — gerador único do contrato
+resilience4j = "2.4.0"   # REC-004 — módulos core (sem Spring): compatíveis com o Boot 4
+archunit = "1.5.1"        # REC-004
+wiremock = "3.13.2"       # REC-004 — standalone (dependências sombreadas, sem conflito com Jackson 3)
+json-schema-validator = "3.0.9"   # REC-003 / ADR-0001 item 3 — validação de schemas/fixtures (Jackson 3)
 
 [libraries]
 # BOM aplicado a todos os módulos (via recorra.java-conventions)
@@ -17,9 +22,43 @@ spring-boot-starter-webmvc = { module = "org.springframework.boot:spring-boot-st
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
 springdoc-webmvc-ui = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
 
+# Persistência (REC-003): Boot 4 tem starters modulares; versões no BOM.
+spring-boot-starter-data-jpa = { module = "org.springframework.boot:spring-boot-starter-data-jpa" }
+spring-boot-starter-flyway = { module = "org.springframework.boot:spring-boot-starter-flyway" }
+flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
+postgresql = { module = "org.postgresql:postgresql" }
+
+# Cliente resiliente dos drivers (REC-004). Só os módulos core + operadores Reactor: o starter
+# Spring Boot do Resilience4j não é usado (nada de auto-configuração acoplada ao Boot 3).
+spring-webflux = { module = "org.springframework:spring-webflux" }
+resilience4j-circuitbreaker = { module = "io.github.resilience4j:resilience4j-circuitbreaker", version.ref = "resilience4j" }
+resilience4j-ratelimiter = { module = "io.github.resilience4j:resilience4j-ratelimiter", version.ref = "resilience4j" }
+resilience4j-retry = { module = "io.github.resilience4j:resilience4j-retry", version.ref = "resilience4j" }
+resilience4j-reactor = { module = "io.github.resilience4j:resilience4j-reactor", version.ref = "resilience4j" }
+
+reactor-core = { module = "io.projectreactor:reactor-core" }   # Hooks (REC-005); versão do BOM
+slf4j-api = { module = "org.slf4j:slf4j-api" }   # logs do SDK (versão do BOM)
+
+# Métricas (REC-003): /actuator/prometheus
+micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus" }
+
+# Jackson (versões no BOM do Spring Boot). Boot 4 usa Jackson 3 (tools.jackson.*);
+# as anotações continuam em com.fasterxml.jackson.annotation (REC-002).
+jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations" }
+jackson-databind = { module = "tools.jackson.core:jackson-databind" }
+
 # Testes
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
 spring-boot-starter-webmvc-test = { module = "org.springframework.boot:spring-boot-starter-webmvc-test" }
+spring-boot-resttestclient = { module = "org.springframework.boot:spring-boot-resttestclient" }
+spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-testcontainers" }
+testcontainers-junit-jupiter = { module = "org.testcontainers:testcontainers-junit-jupiter" }
+testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql" }
+json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "json-schema-validator" }
+archunit = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
+wiremock = { module = "org.wiremock:wiremock-standalone", version.ref = "wiremock" }
+logback-classic = { module = "ch.qos.logback:logback-classic" }   # ListAppender nos testes de log
+mockito-core = { module = "org.mockito:mockito-core" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 assertj-core = { module = "org.assertj:assertj-core" }
@@ -28,3 +67,5 @@ assertj-core = { module = "org.assertj:assertj-core" }
 spring-boot-gradle-plugin = { module = "org.springframework.boot:spring-boot-gradle-plugin", version.ref = "spring-boot" }
 spotless-gradle-plugin = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
 spotbugs-gradle-plugin = { module = "com.github.spotbugs.snom:spotbugs-gradle-plugin", version.ref = "spotbugs-plugin" }
+jsonschema2pojo-gradle-plugin = { module = "org.jsonschema2pojo:jsonschema2pojo-gradle-plugin", version.ref = "jsonschema2pojo" }
+jsonschema2pojo-core = { module = "org.jsonschema2pojo:jsonschema2pojo-core", version.ref = "jsonschema2pojo" }

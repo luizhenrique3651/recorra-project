@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://recorra.com/contracts/eventos/venda-canonica-registrada.schema.json",
+  "title": "VendaCanonicaRegistrada",
+  "description": "Evento venda.canonica.registrada: uma venda do ERP foi capturada pelo driver. Payload mínimo do REC-002.",
+  "type": "object",
+  "properties": {
+    "evento": {
+      "type": "string",
+      "enum": ["venda.canonica.registrada"]
+    },
+    "versao_contrato": {
+      "type": "string",
+      "description": "Versão SemVer do contrato com que o evento foi emitido."
+    },
+    "comercio_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "ocorrido_em": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "venda": {
+      "$ref": "../modelo/venda-canonica.schema.json"
+    }
+  },
+  "required": ["evento", "versao_contrato", "comercio_id", "ocorrido_em", "venda"]
+}

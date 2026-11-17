@@ -1,0 +1,157 @@
+# CI do Recorra (REC-003). Um workflow, jobs por escopo: o job `escopos` decide, a partir dos
+# caminhos alterados (scripts/ci/escopos.sh, testado localmente), o que rodar:
+#   contracts/**, build-logic/**, common/**, gradle/**, raiz, scripts/**, .github/**  → tudo
+#   (messaging/** e drivers/driver-sdk/** também: o job do driver-bling depende do sdk mas não roda os
+#   testes/cobertura dele; messaging/ ainda não tem job próprio)
+#   core-api/**                                                                       → só o core
+#   drivers/driver-bling/**                                                           → só o driver
+#   só docs/specs/tecDoc/*.md                                                         → nada
+# Jobs ignorados contam como sucesso nos "required checks", ao contrário de workflows filtrados por
+# `paths:` (que deixariam o check pendente para sempre). Como skipped também conta como sucesso, o
+# ÚNICO required check é o `ci-ok` (job final): falha se `escopos` ou qualquer build falhar.
+# Sem deploy: ele entra no S9.
+name: ci
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  escopos:
+    runs-on: ubuntu-latest
+    outputs:
+      todos: ${{ steps.escopos.outputs.todos }}
+      core: ${{ steps.escopos.outputs.core }}
+      bling: ${{ steps.escopos.outputs.bling }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Testar as regras de escopo
+        run: scripts/ci/testar-escopos.sh
+      - name: Calcular escopos
+        id: escopos
+        env:
+          EVENTO: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "$EVENTO" = "pull_request" ]; then
+            git diff --no-renames --name-only "$BASE_SHA...$HEAD_SHA" | scripts/ci/escopos.sh | tee -a "$GITHUB_OUTPUT"
+          else
+            # push em develop/main: valida tudo
+            scripts/ci/escopos.sh --tudo | tee -a "$GITHUB_OUTPUT"
+          fi
+
+  # Contrato, convenções do build e o build completo (Spotless, SpotBugs, testes, JaCoCo, ArchUnit
+  # quando existir). Inclui o build-logic (TestKit) via `check` da raiz.
+  todos:
+    needs: escopos
+    if: needs.escopos.outputs.todos == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+      # Antes do build completo de propósito: falha rápida e com o nome do passo certo (a mesma
+      # validação também roda dentro do `build`, via :contracts:test).
+      - name: Validar schemas (meta-schema) e fixtures (ADR-0001 item 3)
+        run: ./gradlew :contracts:test --tests 'com.recorra.contracts.ContratoValidacaoTest'
+      - name: Build completo
+        run: ./gradlew build
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jacoco-todos
+          path: "**/build/reports/jacoco/test/**"
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: testes-todos
+          path: "**/build/reports/tests/**"
+          if-no-files-found: ignore
+
+  core-api:
+    needs: escopos
+    if: needs.escopos.outputs.todos != 'true' && needs.escopos.outputs.core == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+      # + testes de arquitetura (REC-004): o core não pode importar driver, e só estes testes veem
+      # os dois lados.
+      - run: ./gradlew :core-api:build :architecture-tests:build
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jacoco-core-api
+          path: core-api/build/reports/jacoco/test/**
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: testes-core-api
+          path: |
+            core-api/build/reports/tests/**
+            architecture-tests/build/reports/tests/**
+          if-no-files-found: ignore
+
+  driver-bling:
+    needs: escopos
+    if: needs.escopos.outputs.todos != 'true' && needs.escopos.outputs.bling == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew :drivers:driver-bling:build :architecture-tests:build
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jacoco-driver-bling
+          path: drivers/driver-bling/build/reports/jacoco/test/**
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: testes-driver-bling
+          path: |
+            drivers/driver-bling/build/reports/tests/**
+            architecture-tests/build/reports/tests/**
+          if-no-files-found: ignore
+
+  # Único required check. `if: always()` porque, sem ele, uma falha anterior o deixaria skipped (=
+  # verde). A regra está em scripts/ci/resultado-final.sh, testada em testar-escopos.sh.
+  ci-ok:
+    needs: [escopos, todos, core-api, driver-bling]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Conferir resultados
+        run: >
+          scripts/ci/resultado-final.sh
+          escopos=${{ needs.escopos.result }}
+          todos=${{ needs.todos.result }}
+          core-api=${{ needs.core-api.result }}
+          driver-bling=${{ needs.driver-bling.result }}

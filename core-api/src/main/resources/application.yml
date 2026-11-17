@@ -1,9 +1,21 @@
 spring:
   application:
     name: core-api
+  profiles:
+    default: dev
   threads:
     virtual:
       enabled: true
+  jpa:
+    open-in-view: false
+    hibernate:
+      # O schema é do Flyway. NUNCA update/create (REC-003).
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    # outOfOrder é proibido: numerar as migrations pela ordem de execução (V<sprint><seq>).
+    out-of-order: false
+    validate-on-migrate: true
 
 server:
   port: ${PORT:8080}
@@ -12,7 +24,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
 
 springdoc:
   swagger-ui:
