@@ -35,6 +35,7 @@ Ao criar uma ADR nova, acrescente-a a esta tabela.
 
 Resumo; o detalhe está no CONTEXTO §3 e nas ADRs.
 
+- As fronteiras abaixo são verificadas pelo ArchUnit no módulo `architecture-tests` (REC-004). Violar uma delas quebra o build.
 - **`core-api` nunca conhece um ERP** — nenhum import de `com.recorra.driver..`, nenhum `if` por ERP. A única ponte core↔driver é `com.recorra.contracts`.
 - **`contracts` é gerado** do JSON Schema (ADR-0001); nada escrito à mão ali, nenhum campo específico de ERP.
 - **Drivers só leem do ERP.**

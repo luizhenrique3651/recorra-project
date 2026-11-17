@@ -7,8 +7,8 @@
 # Regras (a mesma função roda no GitHub e localmente; testada por scripts/ci/testar-escopos.sh):
 #   - docs/specs/tecDoc/*.md (sem código): nenhum job;
 #   - contracts/, build-logic/, common/, gradle/, raiz do build, scripts/ e .github/: roda TUDO;
-#   - messaging/ e drivers/driver-sdk/: roda TUDO (nenhum job por módulo depende deles ainda;
-#     quando core/driver passarem a depender, mover para o escopo do dependente);
+#   - messaging/ e drivers/driver-sdk/: roda TUDO (o driver-bling depende do sdk, mas o job do driver
+#     não roda os testes/cobertura dele; messaging/ ainda não tem job próprio);
 #   - core-api/: só o core;
 #   - drivers/driver-bling/: só o driver;
 #   - qualquer outro caminho desconhecido: roda TUDO (falha segura).
