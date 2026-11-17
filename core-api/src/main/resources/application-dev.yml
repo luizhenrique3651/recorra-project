@@ -1,0 +1,7 @@
+# Dev: Postgres do docker-compose. Credenciais vêm do ambiente (.env, veja .env.example): nada de
+# segredo no YAML.
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:${DB_PORT:5432}/recorra}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}

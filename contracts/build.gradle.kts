@@ -6,4 +6,8 @@ dependencies {
 
   // Testes de round-trip com o Jackson 3, o mesmo do Spring Boot 4.
   testImplementation(libs.jackson.databind)
+
+  // Validação dos schemas contra o meta-schema e das fixtures contra os schemas (ADR-0001 item 3,
+  // REC-003). Roda no `test`, então o CI e o desenvolvedor executam exatamente a mesma validação.
+  testImplementation(libs.json.schema.validator)
 }

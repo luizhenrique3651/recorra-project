@@ -1,1 +1,4 @@
-plugins { id("recorra.library-conventions") }
+plugins {
+  id("recorra.library-conventions")
+  `java-test-fixtures`
+}

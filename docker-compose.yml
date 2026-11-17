@@ -1,0 +1,24 @@
+# Infra local de desenvolvimento (REC-003). Só Postgres: Grafana/Prometheus ficam para depois.
+# Credenciais vêm do .env (copie de .env.example); sem ele o compose se recusa a subir.
+services:
+  postgres:
+    # Manter em sincronia com a imagem do IntegrationTestBase (core-api/src/test).
+    image: postgres:16-alpine
+    container_name: recorra-postgres
+    environment:
+      POSTGRES_DB: recorra
+      POSTGRES_USER: ${DB_USER:?defina DB_USER no .env}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?defina DB_PASSWORD no .env}
+    ports:
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    volumes:
+      - recorra-pgdata:/var/lib/postgresql/data
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d recorra"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  recorra-pgdata:

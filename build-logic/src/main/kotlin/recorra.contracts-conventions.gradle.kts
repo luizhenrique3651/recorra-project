@@ -26,7 +26,9 @@ jsonSchema2Pojo {
 }
 
 // Sem sobras: o diretório gerado é apagado antes de cada geração (nada de classe órfã de schema
-// removido).
+// removido). A lambda captura só o Provider, não o script (compatível com o configuration cache).
+val saidaGerada = layout.buildDirectory.dir("generated/sources/jsonschema2pojo")
+
 tasks.named("generateJsonSchema2Pojo") {
-  doFirst { delete(layout.buildDirectory.dir("generated/sources/jsonschema2pojo")) }
+  doFirst { saidaGerada.get().asFile.deleteRecursively() }
 }

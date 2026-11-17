@@ -1,0 +1,13 @@
+# Prod: tudo vem do ambiente/secret manager; sem default para credencial.
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+
+# Não expor o contrato em produção (débito REC-001; reverificar no REC-074).
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
