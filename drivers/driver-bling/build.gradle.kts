@@ -5,4 +5,7 @@ dependencies {
   implementation(project(":contracts"))
   // Kit dos drivers (REC-004): cliente resiliente, publisher, poller, webhook, idempotência.
   implementation(project(":drivers:driver-sdk"))
+
+  // CapturaDeLogJson: teste de appender (REC-005).
+  testImplementation(testFixtures(project(":common")))
 }

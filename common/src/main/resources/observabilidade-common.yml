@@ -1,0 +1,14 @@
+# Logs de todos os apps (REC-005): JSON com MDC (traceId, spanId, comercioId) e mascaramento de PII
+# no appender. Importado por cada app com `spring.config.import: classpath:observabilidade-common.yml`.
+logging:
+  structured:
+    format:
+      console: logstash
+    json:
+      customizer: com.recorra.common.logging.MascaramentoJsonCustomizer
+
+server:
+  tomcat:
+    accesslog:
+      # Desligado de propósito: o pattern padrão imprimiria a query (code/state/token do OAuth).
+      enabled: false

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Logging dos testes SEM Spring (REC-005): sem isto o logback roda com o root em DEBUG e despeja
+     centenas de linhas do ArchUnit/Resilience4j/Reactor no CI. Módulos com Spring Boot NÃO usam este
+     arquivo: o Boot assume a configuração (JSON + mascaramento) e um logback-test.xml a substituiria. -->
+<configuration>
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+  <root level="INFO">
+    <appender-ref ref="CONSOLE"/>
+  </root>
+</configuration>

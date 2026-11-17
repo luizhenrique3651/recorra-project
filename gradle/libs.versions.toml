@@ -36,6 +36,7 @@ resilience4j-ratelimiter = { module = "io.github.resilience4j:resilience4j-ratel
 resilience4j-retry = { module = "io.github.resilience4j:resilience4j-retry", version.ref = "resilience4j" }
 resilience4j-reactor = { module = "io.github.resilience4j:resilience4j-reactor", version.ref = "resilience4j" }
 
+reactor-core = { module = "io.projectreactor:reactor-core" }   # Hooks (REC-005); versão do BOM
 slf4j-api = { module = "org.slf4j:slf4j-api" }   # logs do SDK (versão do BOM)
 
 # Métricas (REC-003): /actuator/prometheus

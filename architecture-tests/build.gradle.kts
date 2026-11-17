@@ -26,3 +26,6 @@ rootProject.subprojects
         }
       }
     }
+
+// Testes sem Spring: root em INFO (gradle/logback-test.xml), sem o DEBUG padrão do logback.
+tasks.processTestResources { from(rootProject.layout.projectDirectory.file("gradle/logback-test.xml")) }

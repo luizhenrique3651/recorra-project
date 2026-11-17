@@ -1,5 +1,6 @@
 package com.recorra.driver.sdk;
 
+import com.recorra.common.trace.TraceContext;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import io.github.resilience4j.ratelimiter.RateLimiter;
@@ -15,6 +16,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalLong;
 import java.util.concurrent.TimeoutException;
@@ -79,16 +81,29 @@ public final class ResilientErpClient {
 
   /** GET resiliente; {@code uriTemplate} aceita variáveis de URI. */
   public <T> Mono<T> get(Class<T> tipo, String uriTemplate, Object... variaveis) {
+    // O MDC do chamador é capturado NA INSCRIÇÃO (thread do chamador) e restaurado em todas as
+    // tentativas e logs (retry, circuit breaker, limiter), que rodam em threads do Reactor.
     return Mono.defer(
-            () ->
-                web.get()
-                    .uri(uriTemplate, variaveis)
-                    .retrieve()
-                    .bodyToMono(tipo)
-                    .timeout(callTimeout))
-        .transformDeferred(RateLimiterOperator.of(rateLimiter))
-        .transformDeferred(CircuitBreakerOperator.of(circuitBreaker))
-        .transformDeferred(RetryOperator.of(retry));
+        () -> {
+          Map<String, String> foto = TraceContext.capturar();
+          Mono<T> tentativa =
+              new MdcMono<>(
+                  Mono.defer(
+                      () ->
+                          web.get()
+                              .uri(uriTemplate, variaveis)
+                              .retrieve()
+                              .bodyToMono(tipo)
+                              .timeout(callTimeout)),
+                  foto);
+          Mono<T> protegida =
+              tentativa
+                  .transformDeferred(RateLimiterOperator.of(rateLimiter))
+                  .transformDeferred(CircuitBreakerOperator.of(circuitBreaker));
+          return new MdcMono<>(protegida, foto)
+              .transformDeferred(RetryOperator.of(retry))
+              .contextWrite(ctx -> ctx.put(TraceContext.REACTOR_KEY, foto));
+        });
   }
 
   public CircuitBreaker circuitBreaker() {

@@ -466,6 +466,8 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 - **Role/policy para jobs e admin** (detalhar na `spec.md`): uma role de banco não-superuser e **sem `BYPASSRLS`** para jobs, com policy que permite **somente a enumeração** de `comercio` (id/status) para o job iterar. O `SUPER_ADMIN` opera em `conta`/`comercio` (onboarding, listagem entre tenants) por policy própria, **nunca** lê tabela de domínio de outro tenant sem contexto.
 - A app conecta com role **não-superuser** (RLS vale).
 
+- **Herdado do REC-005 (tech lead, 2026-11-16):** o filtro que resolve o tenant da request abre o `comercioId` no MDC com o `MdcEscopo`/`ContextoDeTrabalho` do `common` e o limpa ao final. Hoje o `comercioId` só aparece em job, consumer e webhook. Teste: os logs de uma request do comércio A trazem `comercioId=A`, e nenhuma linha vaza o comércio de outra request.
+
 **Critérios de aceite.**
 - Com contexto = comércio A, nenhuma query retorna linha do comércio B, mesmo sem filtro no JPQL.
 - Requisição de negócio sem tenant resolvido é rejeitada; consumer com evento sem `comercio_id` é rejeitado.
@@ -498,6 +500,8 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 - ⚠️ **DECISÃO PENDENTE DO USUÁRIO — IdP (CONTEXTO §5.4):** Keycloak (self-host, mais operação) × Cognito (gerenciado, mais simples de operar, menos flexível). O card é implementado contra o padrão OIDC e não depende da escolha, salvo o ambiente de teste (use um JWT assinado de teste/WireMock do JWKS). A escolha precisa sair antes do deploy do piloto (REC-074).
 - **Papéis no MVP: `SUPER_ADMIN` (operador da plataforma) e `OWNER`.** `MANAGER` e `SELLER` ficam na Fase 2. Claims: `sub`, `comercio_id`, `roles`.
 - `SecurityFilterChain`: `/api/v1/**` autenticado; a rota de **ingestão driver→core** (REC-043) também é autenticada, com **HMAC por driver** (assinatura da requisição, segredo por driver, **independente do IdP**, decisão de 2026-11-08; segredo em variável de ambiente no piloto e no gestor de segredos no REC-074, mascarado em log, REC-005) e a checagem driver × `comercio_id` (detalhe no REC-043); essa rota não usa JWT; `/actuator/health`, `/webhooks/**`, `/swagger-ui/**` conforme política; `@PreAuthorize` por papel. CSRF off (stateless).
+
+- **Herdado do REC-005 (tech lead, 2026-11-16):** o `ProblemaGlobalHandler` tem `@ExceptionHandler(Exception.class)` e transformaria `AccessDeniedException`/`AuthenticationException` em 500. Trate as duas como 403/401 em `ProblemDetail` com `traceId` e log `WARN` sem stacktrace, e cubra também as exceções que o Spring Security lança nos filtros, fora do MVC. Teste: sem token → 401 e papel errado → 403, os dois com o `traceId`.
 
 **Critérios de aceite.**
 - Rota restrita a SUPER_ADMIN → 403 para OWNER.
@@ -580,6 +584,8 @@ Modelo: `main` (releases) + `develop` (integração) + `feature/REC-XXX-descrica
 - Conversores/utilitários para uso pelas entidades (ex.: `AttributeConverter`), para o REC-020, REC-021 e REC-055 reutilizarem.
 - **Fora do escopo:** o job de rotação do HMAC. Entra só o **desenho** na `spec.md` (recalcular `telefone_hash` em `cliente`, `consentimento` e trilha no mesmo job, com o `unique` ativo); a **versão no ciphertext** permanece para a rotação futura.
 - Mascaramento de log (REC-005) cobrindo a mestra, as DEKs e os keysets AEAD/MAC.
+
+- **Débito herdado do REC-005 (tech lead, 2026-11-16):** o `MascaradorDePii` (`common`) mantém as chaves sensíveis em mais de uma lista, e elas já divergem. Una tudo numa lista única que gere os regex, e acrescente os formatos dos segredos que este card cria (keysets do Tink, DEK cifrada). Teste de appender com esses formatos.
 
 **Critérios de aceite.**
 - Duas cifras do mesmo valor produzem ciphertexts diferentes; decifrar devolve o valor.

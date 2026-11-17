@@ -7,9 +7,13 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.stubbing.Scenario;
+import com.recorra.common.logging.ReactorErroDescartado;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import java.io.IOException;
@@ -329,5 +333,36 @@ class ResilientErpClientTest {
 
   private static WebClientResponseException erro(int status, HttpHeaders headers) {
     return WebClientResponseException.create(status, "x", headers, new byte[0], null);
+  }
+
+  @Test
+  @DisplayName(
+      "Dado um timeout / Quando o Reactor descarta o erro do cancelamento / Então nenhum ERROR espúrio de reactor.core")
+  void timeoutNaoGeraErrorEspurioDoReactor() throws Exception {
+    ReactorErroDescartado.instalar(); // o app faz isso pela autoconfiguração do common
+    var operators =
+        (ch.qos.logback.classic.Logger)
+            org.slf4j.LoggerFactory.getLogger("reactor.core.publisher.Operators");
+    ListAppender<ILoggingEvent> logs = new ListAppender<>();
+    logs.start();
+    operators.addAppender(logs);
+    try {
+      erp.stubFor(
+          get(urlEqualTo(PATH)).willReturn(aResponse().withStatus(200).withFixedDelay(600)));
+      ResilientErpClient c =
+          cliente(
+              folgada()
+                  .withMaxAttempts(2)
+                  .withCallTimeout(Duration.ofMillis(150))
+                  .withBackoff(Duration.ofMillis(10), Duration.ofMillis(10)));
+
+      assertThatThrownBy(() -> c.get(String.class, PATH).block())
+          .hasRootCauseInstanceOf(TimeoutException.class);
+      Thread.sleep(800); // dá tempo do conector JDK terminar o cancelamento
+    } finally {
+      operators.detachAppender(logs);
+    }
+
+    assertThat(logs.list.stream().filter(e -> e.getLevel() == Level.ERROR)).isEmpty();
   }
 }

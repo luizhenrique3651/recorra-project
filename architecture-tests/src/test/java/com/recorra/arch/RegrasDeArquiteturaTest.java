@@ -86,4 +86,11 @@ class RegrasDeArquiteturaTest {
           .isInstanceOf(AssertionError.class);
     }
   }
+
+  @Test
+  @DisplayName(
+      "Dado o common / Quando analiso os imports / Então não depende de core, driver nem contrato")
+  void commonENeutro() {
+    RegrasDeArquitetura.COMMON_E_NEUTRO.check(producao);
+  }
 }

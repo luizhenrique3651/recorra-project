@@ -34,6 +34,8 @@ dependencies {
   testImplementation(lib("junit-jupiter"))
   testImplementation(lib("assertj-core"))
   testRuntimeOnly(lib("junit-platform-launcher"))
+  // Provedor de SLF4J em todo teste (sem ele: "No SLF4J providers were found"); versão do BOM.
+  testRuntimeOnly(lib("logback-classic"))
 }
 
 tasks.withType<JavaCompile>().configureEach {

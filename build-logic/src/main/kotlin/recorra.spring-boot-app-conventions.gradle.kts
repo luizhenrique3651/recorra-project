@@ -11,6 +11,8 @@ val libs = the<VersionCatalogsExtension>().named("libs")
 fun lib(alias: String) = libs.findLibrary(alias).get()
 
 dependencies {
+  // Observabilidade comum (REC-005): traceparent, MDC, mascaramento de PII, handler RFC 7807.
+  implementation(project(":common"))
   implementation(lib("spring-boot-starter-webmvc"))
   implementation(lib("spring-boot-starter-actuator"))
   implementation(lib("springdoc-webmvc-ui"))

@@ -88,4 +88,13 @@ class RegrasQuebramOBuildTest {
           .doesNotThrowAnyException();
     }
   }
+
+  @Test
+  @DisplayName("Dado o common importando o core / Quando as regras rodam / Então o build falha")
+  void commonImportandoCoreQuebra() {
+    quebra(
+        RegrasDeArquitetura.COMMON_E_NEUTRO,
+        "com.recorra.common.violacao.CommonImportaCore",
+        "com.recorra.core.violacao.CoreAlvo");
+  }
 }

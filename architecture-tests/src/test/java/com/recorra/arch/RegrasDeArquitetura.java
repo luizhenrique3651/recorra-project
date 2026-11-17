@@ -18,6 +18,7 @@ final class RegrasDeArquitetura {
   static final String DRIVERS = "com.recorra.driver..";
   static final String SDK = "com.recorra.driver.sdk..";
   static final String CONTRATO = "com.recorra.contracts..";
+  static final String COMMON = "com.recorra.common..";
 
   /** O core nunca conhece um driver (nem ERP nenhum). */
   static final ArchRule CORE_NAO_IMPORTA_DRIVER =
@@ -49,6 +50,16 @@ final class RegrasDeArquitetura {
           .resideInAnyPackage(CORE, DRIVERS)
           .because("o contrato é gerado do schema e não conhece ninguém");
 
+  /** O common é base técnica: não conhece core, driver nem contrato. */
+  static final ArchRule COMMON_E_NEUTRO =
+      noClasses()
+          .that()
+          .resideInAPackage(COMMON)
+          .should()
+          .dependOnClassesThat()
+          .resideInAnyPackage(CORE, DRIVERS, CONTRATO)
+          .because("common é infraestrutura reutilizável, sem domínio nem ERP");
+
   /** O SDK é genérico: não se acopla a nenhum driver específico de ERP. */
   static final ArchRule SDK_NAO_CONHECE_ERP =
       noClasses()
@@ -60,7 +71,11 @@ final class RegrasDeArquitetura {
 
   static final List<ArchRule> TODAS =
       List.of(
-          CORE_NAO_IMPORTA_DRIVER, DRIVER_NAO_IMPORTA_CORE, CONTRATO_E_NEUTRO, SDK_NAO_CONHECE_ERP);
+          CORE_NAO_IMPORTA_DRIVER,
+          DRIVER_NAO_IMPORTA_CORE,
+          CONTRATO_E_NEUTRO,
+          COMMON_E_NEUTRO,
+          SDK_NAO_CONHECE_ERP);
 
   private RegrasDeArquitetura() {}
 }
