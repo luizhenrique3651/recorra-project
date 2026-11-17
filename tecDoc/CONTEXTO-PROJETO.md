@@ -113,7 +113,7 @@ O diferencial não é cadastro nem cashback (commodities), é a **recompra antec
 - `tecDoc/CONTEXTO-PROJETO.md` — este arquivo.
 - `tecDoc/roadmap-desenvolvimento-sdd.md` — **o principal para o dev**: core de negócio + cards (instruções, critérios, cenários de teste, SP, NÃO FAZER).
 - `tecDoc/revisoes/2026-11-08-auditoria-produto-x-plano-tecnico.md` — auditoria do tech lead, aplicada no roadmap.
-- `docs/adr/` — ADR-0001 (contrato canônico, Aceita), ADR-0002 (Boot 4.1, Aceita), ADR-0003 (WhatsApp só oficial, Aceita), ADR-0004 (criptografia de PII, **Aceita**, Opção B).
+- `docs/adr/` — ADR-0001 (contrato canônico, Aceita), ADR-0002 (Boot 4.1, Aceita), ADR-0003 (WhatsApp só oficial, Aceita), ADR-0004 (criptografia de PII, **Aceita**, Opção B), ADR-0005 (Qodana adiado até haver um servidor Docker dedicado, Aceita; retomada no REC-075).
 
 **Fora do repositório (não estão em `tecDoc/`; existiam na fase anterior de documentação, em outro local):**
 - `desenho-tecnico-plataforma.md` / `.docx`, `plano-desenvolvimento-plataforma.md` / `.docx` — arquitetura, endpoints, casos de uso, pontos de função, precificação.

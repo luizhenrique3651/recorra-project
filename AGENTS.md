@@ -27,6 +27,7 @@ Antes de agir em qualquer tarefa:
 | [0002](docs/adr/0002-baseline-spring-boot-4.md) | Baseline Spring Boot 4.1 (não 3.3) |
 | [0003](docs/adr/0003-whatsapp-somente-api-oficial-no-mvp.md) | WhatsApp só pela API oficial da Meta no MVP |
 | [0004](docs/adr/0004-criptografia-pii-em-repouso.md) | Criptografia de PII em repouso (Tink, chave por comércio) e papéis LGPD |
+| [0005](docs/adr/0005-qodana-adiado-ate-servidor-docker.md) | Qodana fora das revisões até haver um servidor Docker dedicado (REC-075) |
 
 Ao criar uma ADR nova, acrescente-a a esta tabela.
 

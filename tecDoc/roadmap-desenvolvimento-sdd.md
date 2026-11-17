@@ -1532,6 +1532,7 @@ Este card **não será implementado** no MVP nem entra na Fase 2 sem uma nova AD
 - Deploy simples: **1 VM, ECS ou PaaS** + **Postgres gerenciado**, imagens do `core-api` e do `driver-bling`. **Sem broker** (REC-043: HTTP + outbox) e **sem Redis.** A **chave mestra de PII** (ADR-0004) sai da variável de ambiente do piloto para **KMS/Secrets Manager** (ou equivalente da plataforma), assim como o **segredo HMAC por driver** (REC-043); as **DEKs ficam fora dos backups do banco** (ADR-0004). Segredos em Secrets Manager ou equivalente da plataforma. Pipeline de deploy manual ou simples (CI → imagem → deploy).
 - ⚠️ **DECISÃO PENDENTE DO USUÁRIO — plataforma:** VM, ECS ou PaaS. **Padrão provisório (mais simples):** 1 VM com Docker Compose + Postgres gerenciado. Decidir também o IdP (REC-012) antes do deploy.
 - **Provedor de e-mail (item de infra):** o resumo semanal do REC-064 (opção B) exige um provedor de e-mail transacional (SES, SMTP ou equivalente da plataforma): remetente/domínio verificado (SPF/DKIM), credenciais em segredo, limite de envio e teste de entrega. Entra no deploy e no runbook (⚠️ a escolha do provedor é do usuário; sem a opção B esse item cai).
+- **Débitos de pré-deploy aceitos no REC-003 (tech lead, 2026-11-10; obrigatórios aqui):** (a) o perfil `prod` exige `SPRING_PROFILES_ACTIVE` explícito, porque o core tem `spring.profiles.default: dev` e um deploy sem perfil subiria em dev com o springdoc ligado: falhar a subida sem perfil em produção; (b) `/actuator/prometheus` com autenticação ou numa `management.server.port` interna, nunca aberto na porta pública; (c) Hikari `maximum-pool-size` e `connection-timeout` definidos no `prod` (com virtual threads, o pool é o limite real de concorrência); (d) actions do GitHub fixadas por SHA, não por tag (`@v4`).
 - Feature flags por comércio (coluna na config do comércio, REC-013); runbook (onboarding do comércio, configuração do provedor de e-mail, conexão do Bling, onboarding WhatsApp, rollback, monitoramento, backup/restore do Postgres).
 
 **Critérios de aceite.** Versão em prod com health check e rollback; comércio-piloto onboardado **em paralelo** ao sistema atual do comerciante; runbook testado uma vez.
@@ -1543,6 +1544,38 @@ Este card **não será implementado** no MVP nem entra na Fase 2 sem uma nova AD
 **Labels:** devops, deploy, runbook
 
 ---
+---
+
+## Backlog técnico fora de sprint
+*Atividades que não contam na soma do MVP e começam quando a condição delas for atendida.*
+
+### REC-075 · 🆕 [TASK] · 🔵 MEDIUM · 3 SP · EP-01
+**Qodana (inspeções do IntelliJ) num servidor Docker dedicado**
+
+*ADR-0005. Adiado em 2026-11-10: o Docker local (~3,8 GB, dividido com outros projetos) não tem memória para o Qodana importar o monorepo. **Começa quando o usuário avisar que o servidor Docker dedicado está pronto.** Fora da contagem do MVP.*
+
+**Descrição.** Religar as inspeções do IntelliJ nas revisões dos cards, rodando o Qodana Community num servidor Docker dedicado em vez da máquina de desenvolvimento.
+
+**Instruções de desenvolvimento.**
+- Rodar o `jetbrains/qodana-jvm-community` (perfil "Project Default") contra o servidor dedicado (`DOCKER_HOST` ou contexto do Docker), com memória suficiente para importar o projeto Gradle (≥ 4 GB livres para o container). Analisar uma **cópia** do repositório, nunca o checkout de trabalho, e excluir `build/` e o código gerado.
+- Versionar a configuração (`qodana.yaml`, versão da imagem e um script de execução) no repositório, sem segredo nem endereço privado hardcoded (variável de ambiente).
+- **Varredura retroativa:** rodar uma vez sobre a `develop` e tratar os achados dos cards feitos sem Qodana (REC-002 em diante): corrigir agora, adiar como débito ou ignorar, com o porquê.
+- Religar o Qodana nos papéis do caçador de erros e do revisor de warnings (ignorando o ruleId `unused`, falso positivo da imagem Community sem o plugin Spring) e atualizar a ADR-0005.
+- Avaliar levar o Qodana ao CI (GitHub Actions) do REC-003, como job opcional e não bloqueante.
+
+**Critérios de aceite.**
+- Qodana roda contra o servidor dedicado e gera o SARIF sem OOM, em tempo aceitável (< 15 min).
+- A varredura retroativa da `develop` está triada (corrigido, adiado ou ignorado, com motivo).
+- As revisões dos cards voltam a incluir o laudo do Qodana.
+
+**Cenários de teste.**
+- `Dado o servidor dedicado / Quando o Qodana roda sobre a develop / Então o SARIF é gerado e o resumo lista os achados por regra`.
+- `Dado um achado conhecido introduzido de propósito numa cópia / Quando o Qodana roda / Então ele aparece no laudo`.
+
+**NÃO FAZER.** Rodar o Qodana no Docker da máquina de desenvolvimento; analisar o checkout de trabalho (o Gradle escreve em `build/` e `.gradle/`); tornar o Qodana bloqueante no CI antes de triar a varredura retroativa; versionar endereço ou credencial do servidor.
+
+**Labels:** qualidade, análise-estática, qodana, devops
+
 ---
 
 ## Fase 2 (backlog priorizável) — após o piloto
