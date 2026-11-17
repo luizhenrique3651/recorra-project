@@ -8,6 +8,7 @@ springdoc = "3.1.0"       # linha 3.x = Spring Boot 4
 spotless = "8.6.0"
 spotbugs-plugin = "6.5.4"
 jsonschema2pojo = "1.3.3"   # REC-002 / ADR-0001 — gerador único do contrato
+json-schema-validator = "3.0.9"   # REC-003 / ADR-0001 item 3 — validação de schemas/fixtures (Jackson 3)
 
 [libraries]
 # BOM aplicado a todos os módulos (via recorra.java-conventions)
@@ -18,6 +19,15 @@ spring-boot-starter-webmvc = { module = "org.springframework.boot:spring-boot-st
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
 springdoc-webmvc-ui = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
 
+# Persistência (REC-003): Boot 4 tem starters modulares; versões no BOM.
+spring-boot-starter-data-jpa = { module = "org.springframework.boot:spring-boot-starter-data-jpa" }
+spring-boot-starter-flyway = { module = "org.springframework.boot:spring-boot-starter-flyway" }
+flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
+postgresql = { module = "org.postgresql:postgresql" }
+
+# Métricas (REC-003): /actuator/prometheus
+micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus" }
+
 # Jackson (versões no BOM do Spring Boot). Boot 4 usa Jackson 3 (tools.jackson.*);
 # as anotações continuam em com.fasterxml.jackson.annotation (REC-002).
 jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations" }
@@ -26,6 +36,12 @@ jackson-databind = { module = "tools.jackson.core:jackson-databind" }
 # Testes
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
 spring-boot-starter-webmvc-test = { module = "org.springframework.boot:spring-boot-starter-webmvc-test" }
+spring-boot-resttestclient = { module = "org.springframework.boot:spring-boot-resttestclient" }
+spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-testcontainers" }
+testcontainers-junit-jupiter = { module = "org.testcontainers:testcontainers-junit-jupiter" }
+testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql" }
+json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "json-schema-validator" }
+mockito-core = { module = "org.mockito:mockito-core" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 assertj-core = { module = "org.assertj:assertj-core" }

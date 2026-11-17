@@ -41,8 +41,29 @@ tasks.withType<JavaCompile>().configureEach {
   options.compilerArgs.addAll(listOf("-parameters", "-Xlint:all,-processing,-serial"))
 }
 
+// Mockito 5 como -javaagent (recomendação do Mockito; REC-003): sem isso o JDK avisa sobre agente
+// dinâmico ("Mockito is currently self-attaching"). Configuração própria, sem transitivas, para o
+// jar do agente não entrar no classpath de teste.
+val mockitoAgent: Configuration by
+    configurations.creating { isCanBeConsumed = false }
+
+dependencies {
+  mockitoAgent(platform(lib("spring-boot-bom")))
+  mockitoAgent(lib("mockito-core")) { isTransitive = false }
+}
+
 tasks.test {
   useJUnitPlatform()
+  val agente = mockitoAgent
+  // Com agente no bootclasspath o CDS do JDK avisa "Sharing is only supported for boot loader
+  // classes"; desligar o compartilhamento só nos testes remove o aviso (recomendação do Mockito).
+  jvmArgs("-Xshare:off")
+  jvmArgumentProviders.add(
+      object : CommandLineArgumentProvider {
+        @get:Classpath val jar: FileCollection = agente
+
+        override fun asArguments() = listOf("-javaagent:${jar.singleFile.absolutePath}")
+      })
   finalizedBy(tasks.jacocoTestReport)
 }
 
@@ -97,7 +118,17 @@ val classesCobertas =
       }
     }
 
+// Os .java gerados são lidos em tempo de execução para montar a exclusão; por isso entram como
+// INPUT rastreado das tarefas do JaCoCo (REC-003): mudar o schema invalida o relatório e o gate,
+// e nada é varrido na configuração (compatível com o configuration cache).
+val fontesGeradas =
+    fileTree(dirGerado) { include("**/*.java") }
+
 tasks.jacocoTestReport {
+  inputs
+      .files(fontesGeradas)
+      .withPathSensitivity(PathSensitivity.RELATIVE)
+      .withPropertyName("fontesGeradas")
   dependsOn(tasks.test)
   classDirectories.setFrom(classesCobertas)
   reports {
@@ -107,6 +138,10 @@ tasks.jacocoTestReport {
 }
 
 tasks.jacocoTestCoverageVerification {
+  inputs
+      .files(fontesGeradas)
+      .withPathSensitivity(PathSensitivity.RELATIVE)
+      .withPropertyName("fontesGeradas")
   dependsOn(tasks.test)
   classDirectories.setFrom(classesCobertas)
   violationRules {

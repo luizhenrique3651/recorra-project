@@ -10,12 +10,10 @@ import java.time.ZoneOffset;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import tools.jackson.databind.ObjectMapper;
 
 /** O core compila e roda contra o tipo gerado, com o ObjectMapper configurado pelo Boot 4. */
-@SpringBootTest
-class ContratoCanonicoRoundTripTest {
+class ContratoCanonicoRoundTripTest extends IntegrationTestBase {
 
   @Autowired ObjectMapper mapper;
 
